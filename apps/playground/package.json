@@ -11,7 +11,7 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "lumipdf": "0.0.1",
+    "lumipdf": "1.0.0",
     "next": "16.2.0",
     "pdfjs-dist": "^4.10.0",
     "react": "^19.2.0",

@@ -19,10 +19,10 @@ const samplePdfs: PdfDocument[] = [
   },
   {
     id: "2",
-    name: "CSS 2.1 Specification",
-    url: "https://www.w3.org/TR/2006/REC-CSS21-20060630.pdf",
+    name: "Sample PDF",
+    url: "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf",
     category: "Technical",
-  },
+  }
 ];
 
 const CATEGORIES = ["All", "Research", "Technical", "Custom"];
