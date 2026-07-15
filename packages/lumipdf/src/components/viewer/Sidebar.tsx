@@ -14,7 +14,30 @@ export function Sidebar() {
   const goToPage = useViewerStore((s) => s.goToPage);
 
   const resizerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const thumbnailRefs = useRef(new Map<number, HTMLDivElement>());
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    if (sidebarView !== 'thumbnails') return;
+    const container = contentRef.current;
+    const thumbnail = thumbnailRefs.current.get(currentPage);
+    if (!container || !thumbnail) return;
+
+    const top =
+      container.scrollTop +
+      thumbnail.getBoundingClientRect().top -
+      container.getBoundingClientRect().top;
+    const bottom = top + thumbnail.offsetHeight;
+    const visibleTop = container.scrollTop;
+    const visibleBottom = visibleTop + container.clientHeight;
+    if (top >= visibleTop && bottom <= visibleBottom) return;
+
+    container.scrollTo({
+      top: Math.max(0, top - (container.clientHeight - thumbnail.offsetHeight) / 2),
+      behavior: 'smooth',
+    });
+  }, [currentPage, sidebarView]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -86,12 +109,16 @@ export function Sidebar() {
         </button>
       </div>
 
-      <div className="dv-sidebar-content">
+      <div ref={contentRef} className="dv-sidebar-content">
         {sidebarView === 'thumbnails' && (
           <div className="dv-sidebar-thumbnails">
             {document.pages.map((_, idx) => (
               <div
                 key={idx}
+                ref={(element) => {
+                  if (element) thumbnailRefs.current.set(idx, element);
+                  else thumbnailRefs.current.delete(idx);
+                }}
                 className="dv-sidebar-thumbnail-item"
                 data-active={currentPage === idx}
                 onClick={() => goToPage(idx)}

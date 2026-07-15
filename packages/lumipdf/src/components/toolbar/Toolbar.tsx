@@ -94,7 +94,9 @@ export function Toolbar({ features }: ToolbarProps) {
   const setSearchOpen = useViewerStore((s) => s.setSearchOpen);
 
   const [searchText, setSearchText] = useState('');
+  const [moreOpen, setMoreOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -110,6 +112,22 @@ export function Toolbar({ features }: ToolbarProps) {
   useEffect(() => () => {
     if (searchTimer.current) clearTimeout(searchTimer.current);
   }, []);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (event: MouseEvent) => {
+      if (!moreMenuRef.current?.contains(event.target as Node)) setMoreOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreOpen(false);
+    };
+    window.addEventListener('mousedown', close);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('mousedown', close);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [moreOpen]);
 
   const handleSearch = useCallback(
     (text: string) => {
@@ -286,146 +304,91 @@ export function Toolbar({ features }: ToolbarProps) {
                   <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3z" />
                 </svg>
               </button>
-              <button
-                className="dv-button"
-                onClick={() =>
-                  setCursorMode(cursorMode === 'marquee' ? 'select' : 'marquee')
-                }
-                aria-pressed={cursorMode === 'marquee'}
-                data-toggled={cursorMode === 'marquee'}
-                aria-label="Marquee zoom"
-                title="Marquee zoom - drag a box to zoom in"
-              >
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
-                  <rect x="2.5" y="2.5" width="11" height="11" rx="1" strokeDasharray="2.5 1.8" />
-                  <path d="M6 8h4M8 6v4" strokeLinecap="round" />
-                </svg>
-              </button>
             </>
-          )}
-
-          {features?.rotation && (
-            <>
-              <button
-                className="dv-button"
-                onClick={rotateCounterClockwise}
-                aria-label={strings.toolbar.rotateCounterClockwise}
-                title={strings.toolbar.rotateCounterClockwise}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 3a5 5 0 1 1-5 5H1a7 7 0 1 0 7-7V0L4 2l4 2V3z" />
-                </svg>
-              </button>
-              <button
-                className="dv-button"
-                onClick={rotateClockwise}
-                aria-label={strings.toolbar.rotateClockwise}
-                title={strings.toolbar.rotateClockwise}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 3a5 5 0 1 0 5 5h2A7 7 0 1 1 8 1V0l4 2-4 2V3z" />
-                </svg>
-              </button>
-            </>
-          )}
-
-          {pageCount > 1 && (
-            <select
-              className="dv-zoom-select"
-              value={spreadMode}
-              onChange={(e) => setSpreadMode(e.target.value as SpreadMode)}
-              aria-label="Page layout"
-              title="Page layout"
-            >
-              <option value="none">Single page</option>
-              <option value="even">Two pages</option>
-              <option value="odd">Two pages (cover)</option>
-            </select>
           )}
         </div>
 
-        {(features?.download || features?.print || features?.fullscreen || hasDocument) && (
-          <div className="dv-toolbar-group dv-toolbar-actions">
-            {features?.download && (
-              <button
-                className="dv-button"
-                onClick={() => downloadDocument()}
-                aria-label={strings.toolbar.download}
-                title={strings.toolbar.download}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M7 1h2v6h3l-4 4-4-4h3V1zM3 13h10v2H3v-2z" />
-                </svg>
-              </button>
-            )}
-            {features?.print && (
-              <button
-                className="dv-button"
-                onClick={() => printDocument()}
-                aria-label={strings.toolbar.print}
-                title={strings.toolbar.print}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 1h8v3H4V1zM3 5h10a2 2 0 0 1 2 2v4h-3v4H4v-4H1V7a2 2 0 0 1 2-2zm3 6v3h4v-3H6zm6-2.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z" />
-                </svg>
-              </button>
-            )}
-            {features?.fullscreen && (
-              <button
-                className="dv-button"
-                onClick={() => toggleFullscreen()}
-                aria-pressed={isFullscreen}
-                data-toggled={isFullscreen}
-                aria-label={strings.toolbar.fullscreen}
-                title={strings.toolbar.fullscreen}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M1 1h5v2H3v3H1V1zm9 0h5v5h-2V3h-3V1zM1 10h2v3h3v2H1v-5zm12 0h2v5h-5v-2h3v-3z" />
-                </svg>
-              </button>
-            )}
-            {hasDocument && (
-              <button
-                className="dv-button"
-                onClick={() => setPropertiesOpen(true)}
-                aria-label={strings.toolbar.properties}
-                title={strings.toolbar.properties}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2.5A1.1 1.1 0 1 1 8 5.7a1.1 1.1 0 0 1 0-2.2zM6.5 7h2.2v4.5H10V13H6v-1.5h1.2V8.5H6.5V7z" />
-                </svg>
-              </button>
-            )}
+        {features?.download && (
+          <div className="dv-toolbar-group">
+            <button
+              className="dv-button"
+              onClick={() => downloadDocument()}
+              aria-label={strings.toolbar.download}
+              title={strings.toolbar.download}
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7 1h2v6h3l-4 4-4-4h3V1zM3 13h10v2H3v-2z" />
+              </svg>
+            </button>
           </div>
         )}
 
-        {features?.annotations && (
-          <div
-            className="dv-toolbar-group dv-toolbar-annotations"
-            role="radiogroup"
-            aria-label="Annotation tools"
+        {features?.rotation && (
+          <div className="dv-toolbar-group">
+            <button className="dv-button" onClick={rotateCounterClockwise} aria-label={strings.toolbar.rotateCounterClockwise} title={strings.toolbar.rotateCounterClockwise}>
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 1 1-5 5H1a7 7 0 1 0 7-7V0L4 2l4 2V3z" /></svg>
+            </button>
+            <button className="dv-button" onClick={rotateClockwise} aria-label={strings.toolbar.rotateClockwise} title={strings.toolbar.rotateClockwise}>
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 1 0 5 5h2A7 7 0 1 1 8 1V0l4 2-4 2V3z" /></svg>
+            </button>
+          </div>
+        )}
+
+        <div className="dv-toolbar-overflow" ref={moreMenuRef}>
+          <button
+            className="dv-button dv-toolbar-more-button"
+            onClick={() => setMoreOpen((open) => !open)}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+            aria-label="More tools"
+            title="More tools"
           >
-            {ANNOTATION_TOOLS.map(({ tool, label, path }) => {
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" /></svg>
+          </button>
+          {moreOpen && (
+            <div className="dv-toolbar-more-menu" role="menu" aria-label="More tools">
+              {features?.zoom !== false && (
+                <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { setCursorMode(cursorMode === 'marquee' ? 'select' : 'marquee'); setMoreOpen(false); }} aria-pressed={cursorMode === 'marquee'}>
+                  Marquee zoom
+                </button>
+              )}
+              {pageCount > 1 && (
+                <label className="dv-toolbar-menu-field">Page layout
+                  <select value={spreadMode} onChange={(e) => setSpreadMode(e.target.value as SpreadMode)} aria-label="Page layout">
+                    <option value="none">Single page</option><option value="even">Two pages</option><option value="odd">Two pages (cover)</option>
+                  </select>
+                </label>
+              )}
+              {(features?.print || features?.fullscreen || hasDocument) && (
+                <div className="dv-toolbar-menu-row">
+                  {features?.print && <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { printDocument(); setMoreOpen(false); }}>Print</button>}
+                  {features?.fullscreen && <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { toggleFullscreen(); setMoreOpen(false); }}>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</button>}
+                  {hasDocument && <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { setPropertiesOpen(true); setMoreOpen(false); }}>Properties</button>}
+                </div>
+              )}
+              {features?.annotations && (
+                <div className="dv-toolbar-menu-section" role="radiogroup" aria-label="Annotation tools">
+                  <span className="dv-toolbar-menu-heading">Annotate</span>
+                  {ANNOTATION_TOOLS.map(({ tool, label }) => {
               const isActive = activeTool === tool;
               return (
                 <button
                   key={tool}
-                  className="dv-button"
+                  className="dv-toolbar-menu-item"
                   role="radio"
                   aria-checked={isActive}
-                  aria-label={label}
-                  title={label}
                   data-toggled={isActive}
-                  onClick={() => setActiveTool(isActive ? null : tool)}
+                  onClick={() => { setActiveTool(isActive ? null : tool); setMoreOpen(false); }}
                 >
-                  <svg viewBox="0 0 16 16" fill="currentColor">
-                    <path d={path} />
-                  </svg>
+                  {label}
                 </button>
               );
             })}
-          </div>
-        )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {searchOpen && features?.search && (

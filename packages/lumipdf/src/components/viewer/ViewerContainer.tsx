@@ -46,6 +46,8 @@ export function ViewerContainer() {
 
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
+  const pinchZoomRef = useRef<number | null>(null);
+  const [renderZoom, setRenderZoom] = useState(zoom);
 
   const gesture = useRef<{
     base: number;
@@ -56,14 +58,32 @@ export function ViewerContainer() {
     cursorY: number;
   } | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const pendingAnchor = useRef<{ ratio: number; x: number; y: number; cx: number; cy: number } | null>(null);
+  const scaleFrame = useRef<number | undefined>(undefined);
+  const pendingAnchor = useRef<{
+    ratio: number;
+    x: number;
+    y: number;
+    cx: number;
+    cy: number;
+    pageIndex?: number;
+    pageX?: number;
+    pageY?: number;
+  } | null>(null);
 
   const applyLiveScale = useCallback(() => {
-    const content = contentRef.current;
-    const g = gesture.current;
-    if (!content || !g) return;
-    content.style.transformOrigin = `${g.originX}px ${g.originY}px`;
-    content.style.transform = `scale(${g.factor})`;
+    if (scaleFrame.current !== undefined) return;
+    scaleFrame.current = requestAnimationFrame(() => {
+      scaleFrame.current = undefined;
+      const content = contentRef.current;
+      const g = gesture.current;
+      if (!content || !g) return;
+      content.style.transformOrigin = `${g.originX}px ${g.originY}px`;
+      content.style.transform = `scale(${g.factor})`;
+    });
+  }, []);
+
+  useEffect(() => () => {
+    if (scaleFrame.current !== undefined) cancelAnimationFrame(scaleFrame.current);
   }, []);
 
   const commitGesture = useCallback(() => {
@@ -80,16 +100,41 @@ export function ViewerContainer() {
       }
       return;
     }
+    const el = scrollRef.current;
+    const viewerRect = el?.getBoundingClientRect();
+    const pageElement = viewerRect
+      ? window.document
+          .elementFromPoint(viewerRect.left + g.cursorX, viewerRect.top + g.cursorY)
+          ?.closest<HTMLElement>('.dv-page')
+      : null;
+    const pageRect = pageElement?.getBoundingClientRect();
+
     pendingAnchor.current = {
       ratio: next / g.base,
       x: g.originX,
       y: g.originY,
       cx: g.cursorX,
       cy: g.cursorY,
+      ...(pageElement && pageRect
+        ? {
+            pageIndex: Number(pageElement.dataset.pageIndex),
+            pageX: (viewerRect!.left + g.cursorX - pageRect.left) / pageRect.width,
+            pageY: (viewerRect!.top + g.cursorY - pageRect.top) / pageRect.height,
+          }
+        : {}),
     };
     isProgrammaticScroll.current = true;
+    pinchZoomRef.current = next;
     setZoom(next);
   }, [setZoom]);
+
+  useEffect(() => {
+    if (pinchZoomRef.current !== null && Math.abs(pinchZoomRef.current - zoom) < 1e-4) {
+      pinchZoomRef.current = null;
+      return;
+    }
+    setRenderZoom(zoom);
+  }, [zoom]);
 
   useLayoutEffect(() => {
     const anchor = pendingAnchor.current;
@@ -102,8 +147,18 @@ export function ViewerContainer() {
     }
     const el = scrollRef.current;
     if (el) {
-      el.scrollLeft = anchor.x * anchor.ratio - anchor.cx;
-      el.scrollTop = anchor.y * anchor.ratio - anchor.cy;
+      const page = Number.isInteger(anchor.pageIndex)
+        ? content?.querySelector<HTMLElement>(`.dv-page[data-page-index="${anchor.pageIndex}"]`)
+        : null;
+      if (page && anchor.pageX !== undefined && anchor.pageY !== undefined) {
+        const viewerRect = el.getBoundingClientRect();
+        const pageRect = page.getBoundingClientRect();
+        el.scrollLeft += pageRect.left - viewerRect.left + pageRect.width * anchor.pageX - anchor.cx;
+        el.scrollTop += pageRect.top - viewerRect.top + pageRect.height * anchor.pageY - anchor.cy;
+      } else {
+        el.scrollLeft = anchor.x * anchor.ratio - anchor.cx;
+        el.scrollTop = anchor.y * anchor.ratio - anchor.cy;
+      }
     }
   }, [zoom]);
 
@@ -153,6 +208,14 @@ export function ViewerContainer() {
     },
     overscan: 2,
     horizontal: isHorizontal,
+    measureElement: (element) => {
+      const rowIndex = Number(element.getAttribute('data-index'));
+      const size = isHorizontal
+        ? element.getBoundingClientRect().width
+        : element.getBoundingClientRect().height;
+      const hasGap = !isHorizontal && rowIndex < rows.length - 1;
+      return size + (hasGap ? PAGE_VERTICAL_GAP : 0);
+    },
   });
 
   useEffect(() => {
@@ -472,6 +535,8 @@ export function ViewerContainer() {
                   position: 'absolute',
                   top: 0,
                   left: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
                   ...(isHorizontal
                     ? { height: '100%', transform: `translateX(${virtualItem.start}px)` }
                     : { width: '100%', transform: `translateY(${virtualItem.start}px)` }),
@@ -487,11 +552,11 @@ export function ViewerContainer() {
                     }}
                   >
                     {row.map((p) => (
-                      <PageRenderer key={p} pageIndex={p} />
+                      <PageRenderer key={p} pageIndex={p} renderZoom={renderZoom} />
                     ))}
                   </div>
                 ) : (
-                  <PageRenderer pageIndex={row[0]!} />
+                  <PageRenderer pageIndex={row[0]!} renderZoom={renderZoom} />
                 )}
               </div>
             );

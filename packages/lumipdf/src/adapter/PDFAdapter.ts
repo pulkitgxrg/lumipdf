@@ -187,9 +187,8 @@ export class PdfAdapter implements Adapter {
       if (target instanceof HTMLCanvasElement) {
         const renderWidth = Math.ceil(viewport.width);
         const renderHeight = Math.ceil(viewport.height);
-
-        target.width = isSideways ? renderHeight : renderWidth;
-        target.height = isSideways ? renderWidth : renderHeight;
+        target.width = renderWidth;
+        target.height = renderHeight;
         target.style.width = `${outWidth}px`;
         target.style.height = `${outHeight}px`;
 

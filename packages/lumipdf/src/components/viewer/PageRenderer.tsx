@@ -13,9 +13,10 @@ import { AnnotationLayer } from "./AnnotationLayer";
 
 export interface PageRendererProps {
   pageIndex: number;
+  renderZoom?: number;
 }
 
-export function PageRenderer({ pageIndex }: PageRendererProps) {
+export function PageRenderer({ pageIndex, renderZoom }: PageRendererProps) {
   const adapter = useViewerStore((s) => s.adapter);
   const document = useViewerStore((s) => s.document);
   const zoom = useViewerStore((s) => s.zoom);
@@ -28,6 +29,7 @@ export function PageRenderer({ pageIndex }: PageRendererProps) {
   const format = document?.format;
   const isCanvasFormat = format === "pdf" || format === "image";
   const features = adapter?.manifest.features;
+  const bitmapZoom = renderZoom ?? zoom;
 
   useEffect(() => {
     if (!adapter || !document || !targetRef.current) return;
@@ -41,7 +43,7 @@ export function PageRenderer({ pageIndex }: PageRendererProps) {
     const cacheKey = makeCacheKey(
       document.format,
       pageIndex,
-      zoom,
+      bitmapZoom,
       rotation,
       window.devicePixelRatio,
     );
@@ -55,7 +57,7 @@ export function PageRenderer({ pageIndex }: PageRendererProps) {
     const ctx: RenderContext = {
       page,
       target: targetRef.current,
-      scale: zoom,
+      scale: bitmapZoom,
       rotation,
       devicePixelRatio: window.devicePixelRatio,
       signal: controller.signal,
@@ -99,7 +101,7 @@ export function PageRenderer({ pageIndex }: PageRendererProps) {
       .catch(() => {});
 
     return () => controller.abort();
-  }, [adapter, document, pageIndex, zoom, rotation, pageCache]);
+  }, [adapter, document, pageIndex, bitmapZoom, rotation, pageCache]);
 
   if (!document || !adapter) return null;
 

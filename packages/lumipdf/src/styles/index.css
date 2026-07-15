@@ -90,6 +90,93 @@
   flex: 1;
 }
 
+.dv-toolbar-overflow { position: relative; flex: 0 0 auto; }
+
+.dv-toolbar-more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: min(280px, calc(100vw - 24px));
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--dv-border);
+  border-radius: var(--dv-border-radius);
+  background: var(--dv-bg);
+  box-shadow: var(--dv-shadow-lg);
+}
+
+.dv-toolbar-menu-row,
+.dv-toolbar-menu-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.dv-toolbar-menu-item,
+.dv-toolbar-menu-field select {
+  min-height: 36px;
+  padding: 8px 10px;
+  color: var(--dv-text);
+  font: 500 13px var(--dv-font-sans);
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dv-toolbar-menu-item:hover,
+.dv-toolbar-menu-item[data-toggled='true'],
+.dv-toolbar-menu-item[aria-checked='true'] {
+  background: var(--dv-button-hover);
+}
+
+.dv-toolbar-menu-item[data-toggled='true'],
+.dv-toolbar-menu-item[aria-checked='true'] {
+  color: var(--dv-button-toggled-text);
+  background: var(--dv-button-toggled);
+}
+
+.dv-toolbar-menu-field {
+  display: grid;
+  gap: 5px;
+  padding: 8px 10px;
+  color: var(--dv-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dv-toolbar-menu-field select {
+  width: 100%;
+  border-color: var(--dv-border);
+  background: var(--dv-bg);
+}
+
+.dv-toolbar-menu-section {
+  padding-top: 4px;
+  border-top: 1px solid var(--dv-border);
+}
+
+.dv-toolbar-menu-heading {
+  grid-column: 1 / -1;
+  padding: 4px 6px 2px;
+  color: var(--dv-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .dv-toolbar { gap: 4px; padding: 0 8px; }
+  .dv-toolbar-page-nav .dv-button,
+  .dv-toolbar-spacer + .dv-toolbar-group { display: none; }
+  .dv-zoom-select { max-width: 104px; }
+}
+
 .dv-button {
   display: inline-flex;
   align-items: center;
@@ -212,7 +299,8 @@
   align-items: center;
   position: relative;
   outline: none;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+  touch-action: pan-x pan-y;
 }
 
 .dv-page {
@@ -221,7 +309,12 @@
   border-radius: 4px;
   box-shadow: var(--dv-shadow-lg);
   position: relative;
-  transition: transform 0.2s ease;
+}
+
+.dv-page > canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .dv-sidebar {
