@@ -27,6 +27,10 @@ const samplePdfs: PdfDocument[] = [
 
 const CATEGORIES = ["All", "Research", "Technical", "Custom"];
 
+function proxiedPdfUrl(url: string): string {
+  return `/api/pdf?url=${encodeURIComponent(url)}`;
+}
+
 function IconFile({ size = 16 }: { size?: number }) {
   return (
     <svg
@@ -670,7 +674,7 @@ export default function Home() {
             <DocumentViewer
               key={selectedPdf.id}
               ref={viewerRef}
-              source={{ kind: "url", url: selectedPdf.url }}
+              source={{ kind: "url", url: proxiedPdfUrl(selectedPdf.url) }}
               theme="light"
             />
           </div>

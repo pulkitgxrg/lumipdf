@@ -79,13 +79,18 @@ async function createUrlReader(
   }
 
   const blob = await response.blob();
-  const name = filename || extractFilenameFromUrl(url);
+  const mimeType = response.headers.get('content-type')?.split(';', 1)[0].trim()
+    || blob.type
+    || 'application/pdf';
+  const name = filename || extractFilenameFromDisposition(response.headers.get('content-disposition'))
+    || extractFilenameFromUrl(url)
+    || (mimeType === 'application/pdf' ? 'document.pdf' : 'document');
 
   return {
     meta: {
       name,
       size: blob.size,
-      mimeType: blob.type || 'application/pdf',
+      mimeType,
     },
     arrayBuffer: () => blob.arrayBuffer(),
     stream: () => blob.stream() as ReadableStream<Uint8Array>,
@@ -102,5 +107,16 @@ function extractFilenameFromUrl(url: string): string {
   } catch {
     // fallback
   }
-  return 'document.pdf';
+  return '';
+}
+
+function extractFilenameFromDisposition(value: string | null): string | null {
+  if (!value) return null;
+  const match = /filename\*?=(?:UTF-8''|\")?([^;\"]+)/i.exec(value);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1].trim());
+  } catch {
+    return match[1].trim();
+  }
 }
