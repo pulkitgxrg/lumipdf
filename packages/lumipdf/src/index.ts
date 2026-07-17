@@ -36,6 +36,7 @@ export type {
   Annotation,
   AnnotationTool,
   AnnotationChangeListener,
+  AnnotationStyle,
   Theme,
   SidebarView,
   FitMode,

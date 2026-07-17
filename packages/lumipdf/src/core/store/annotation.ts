@@ -3,12 +3,14 @@ import type {
   Annotation,
   AnnotationTool,
   AnnotationChangeListener,
+  AnnotationStyle,
 } from '../types';
 
 export interface AnnotationSlice {
   annotations: Annotation[];
   activeAnnotationTool: AnnotationTool | null;
   selectedAnnotationId: string | null;
+  annotationStyle: AnnotationStyle;
 
   addAnnotation: (annotation: Annotation) => void;
   updateAnnotation: (
@@ -20,6 +22,7 @@ export interface AnnotationSlice {
   clearAnnotations: () => void;
   selectAnnotation: (id: string | null) => void;
   setActiveTool: (tool: AnnotationTool | null) => void;
+  setAnnotationStyle: (style: Partial<AnnotationStyle>) => void;
   onAnnotationChange: (cb: AnnotationChangeListener) => () => void;
   _resetAnnotations: () => void;
 }
@@ -42,6 +45,16 @@ export const createAnnotationSlice: StateCreator<
     annotations: [],
     activeAnnotationTool: null,
     selectedAnnotationId: null,
+    annotationStyle: {
+      highlightColor: '#ffd400',
+      shapeColor: '#2563eb',
+      shapeThickness: 0.003,
+      shapeDashed: false,
+      textColor: '#111827',
+      textSize: 0.024,
+      textBold: false,
+      textItalic: false,
+    },
 
     addAnnotation: (annotation: Annotation) => {
       const next = [...get().annotations, annotation];
@@ -87,6 +100,9 @@ export const createAnnotationSlice: StateCreator<
 
     setActiveTool: (tool: AnnotationTool | null) =>
       set({ activeAnnotationTool: tool }),
+
+    setAnnotationStyle: (style: Partial<AnnotationStyle>) =>
+      set((state) => ({ annotationStyle: { ...state.annotationStyle, ...style } })),
 
     onAnnotationChange: (cb: AnnotationChangeListener) => {
       listeners.add(cb);

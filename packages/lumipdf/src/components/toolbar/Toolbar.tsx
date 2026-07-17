@@ -47,11 +47,6 @@ const ANNOTATION_TOOLS: ReadonlyArray<{
     label: 'Text',
     path: 'M2 2h12v3h-1.5V3.5H8.75v9H10V14H6v-1.5h1.25v-9H3.5V5H2V2z',
   },
-  {
-    tool: 'sticky-note',
-    label: 'Note',
-    path: 'M3 2h10v8l-3 4H3V2zm7 11v-3h3l-3 3z',
-  },
 ];
 
 export function Toolbar({ features }: ToolbarProps) {
@@ -84,6 +79,8 @@ export function Toolbar({ features }: ToolbarProps) {
   const currentMatchIndex = useViewerStore((s) => s.currentMatchIndex);
   const activeTool = useViewerStore((s) => s.activeAnnotationTool);
   const setActiveTool = useViewerStore((s) => s.setActiveTool);
+  const annotationStyle = useViewerStore((s) => s.annotationStyle);
+  const setAnnotationStyle = useViewerStore((s) => s.setAnnotationStyle);
   const downloadDocument = useViewerStore((s) => s.downloadDocument);
   const printDocument = useViewerStore((s) => s.printDocument);
   const toggleFullscreen = useViewerStore((s) => s.toggleFullscreen);
@@ -378,12 +375,40 @@ export function Toolbar({ features }: ToolbarProps) {
                   role="radio"
                   aria-checked={isActive}
                   data-toggled={isActive}
-                  onClick={() => { setActiveTool(isActive ? null : tool); setMoreOpen(false); }}
+                  onClick={() => setActiveTool(isActive ? null : tool)}
                 >
                   {label}
                 </button>
               );
-            })}
+                  })}
+                  {activeTool === 'highlight' && (
+                    <label className="dv-toolbar-menu-field">Highlight color
+                      <input type="color" value={annotationStyle.highlightColor} onChange={(e) => setAnnotationStyle({ highlightColor: e.target.value })} />
+                    </label>
+                  )}
+                  {activeTool && ['rectangle', 'ellipse', 'line', 'arrow'].includes(activeTool) && (
+                    <>
+                      <label className="dv-toolbar-menu-field">Shape color
+                        <input type="color" value={annotationStyle.shapeColor} onChange={(e) => setAnnotationStyle({ shapeColor: e.target.value })} />
+                      </label>
+                      <label className="dv-toolbar-menu-field">Thickness
+                        <input type="range" min="0.001" max="0.015" step="0.001" value={annotationStyle.shapeThickness} onChange={(e) => setAnnotationStyle({ shapeThickness: Number(e.target.value) })} />
+                      </label>
+                      <label className="dv-toolbar-menu-item"><input type="checkbox" checked={annotationStyle.shapeDashed} onChange={(e) => setAnnotationStyle({ shapeDashed: e.target.checked })} /> Dotted</label>
+                    </>
+                  )}
+                  {activeTool === 'free-text' && (
+                    <>
+                      <label className="dv-toolbar-menu-field">Text color
+                        <input type="color" value={annotationStyle.textColor} onChange={(e) => setAnnotationStyle({ textColor: e.target.value })} />
+                      </label>
+                      <label className="dv-toolbar-menu-field">Text size
+                        <input type="range" min="0.012" max="0.08" step="0.002" value={annotationStyle.textSize} onChange={(e) => setAnnotationStyle({ textSize: Number(e.target.value) })} />
+                      </label>
+                      <label className="dv-toolbar-menu-item"><input type="checkbox" checked={annotationStyle.textBold} onChange={(e) => setAnnotationStyle({ textBold: e.target.checked })} /> Bold</label>
+                      <label className="dv-toolbar-menu-item"><input type="checkbox" checked={annotationStyle.textItalic} onChange={(e) => setAnnotationStyle({ textItalic: e.target.checked })} /> Italic</label>
+                    </>
+                  )}
                 </div>
               )}
             </div>

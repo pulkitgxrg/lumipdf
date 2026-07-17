@@ -3,7 +3,6 @@ import type {
   Annotation,
   HighlightAnnotation,
   InkAnnotation,
-  StickyNoteAnnotation,
   ShapeAnnotation,
   ShapeKind,
   FreeTextAnnotation,
@@ -30,8 +29,6 @@ const TOOL_DEFAULTS = {
 } as const;
 
 const INK_THICKNESS = 0.004; // fraction of page width
-const SHAPE_STROKE = 0.003; // fraction of page width
-const FREE_TEXT_SIZE = 0.024; // fraction of page height
 
 const SHAPE_TOOLS = ['rectangle', 'ellipse', 'line', 'arrow'] as const;
 type ShapeTool = (typeof SHAPE_TOOLS)[number];
@@ -56,10 +53,12 @@ function renderShapeGeometry(
   from: Point,
   to: Point,
   color: string,
+  strokeWidth: number,
+  dashed: boolean,
   width: number,
   height: number,
 ): React.ReactNode {
-  const stroke = SHAPE_STROKE * width;
+  const stroke = strokeWidth * width;
   const x1 = from.x * width;
   const y1 = from.y * height;
   const x2 = to.x * width;
@@ -69,6 +68,7 @@ function renderShapeGeometry(
     strokeWidth: stroke,
     fill: 'none' as const,
     strokeLinecap: 'round' as const,
+    ...(dashed ? { strokeDasharray: `${stroke * 3} ${stroke * 2}` } : {}),
   };
   if (shape === 'rectangle') {
     return (
@@ -115,13 +115,16 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
   const selectedId = useViewerStore((s) => s.selectedAnnotationId);
   const addAnnotation = useViewerStore((s) => s.addAnnotation);
   const deleteAnnotation = useViewerStore((s) => s.deleteAnnotation);
+  const updateAnnotation = useViewerStore((s) => s.updateAnnotation);
   const selectAnnotation = useViewerStore((s) => s.selectAnnotation);
+  const annotationStyle = useViewerStore((s) => s.annotationStyle);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const drawingRef = useRef(false);
   const startRef = useRef<Point | null>(null);
   const [draftBox, setDraftBox] = useState<{ from: Point; to: Point } | null>(null);
   const [draftPath, setDraftPath] = useState<Point[]>([]);
+  const [textBox, setTextBox] = useState<{ point: Point; text: string } | null>(null);
 
   const isDrawingTool = activeTool !== null;
 
@@ -139,39 +142,8 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
     const pt = toPoint(e);
     svgRef.current?.setPointerCapture(e.pointerId);
 
-    if (activeTool === 'sticky-note') {
-      const comment = window.prompt('Note');
-      if (comment != null && comment.trim()) {
-        const note: StickyNoteAnnotation = {
-          id: newId(),
-          pageIndex,
-          type: 'sticky-note',
-          color: TOOL_DEFAULTS['sticky-note'].color,
-          opacity: 1,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          data: { x: pt.x, y: pt.y, comment: comment.trim() },
-        };
-        addAnnotation(note);
-      }
-      return;
-    }
-
     if (activeTool === 'free-text') {
-      const text = window.prompt('Text');
-      if (text != null && text.trim()) {
-        const ann: FreeTextAnnotation = {
-          id: newId(),
-          pageIndex,
-          type: 'free-text',
-          color: TOOL_DEFAULTS['free-text'].color,
-          opacity: 1,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          data: { x: pt.x, y: pt.y, text: text.trim(), fontSize: FREE_TEXT_SIZE },
-        };
-        addAnnotation(ann);
-      }
+      setTextBox({ point: pt, text: '' });
       return;
     }
 
@@ -222,11 +194,11 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
           id: newId(),
           pageIndex,
           type: 'shape',
-          color: TOOL_DEFAULTS.shape.color,
+          color: annotationStyle.shapeColor,
           opacity: 1,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          data: { shape: activeTool, from, to, strokeWidth: SHAPE_STROKE },
+          data: { shape: activeTool, from, to, strokeWidth: annotationStyle.shapeThickness, dashed: annotationStyle.shapeDashed },
         };
         addAnnotation(shape);
       } else if (activeTool === 'highlight' && dx > 0.002 && dy > 0.002) {
@@ -234,7 +206,7 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
           id: newId(),
           pageIndex,
           type: 'highlight',
-          color: TOOL_DEFAULTS.highlight.color,
+          color: annotationStyle.highlightColor,
           opacity: TOOL_DEFAULTS.highlight.opacity,
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -280,6 +252,7 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
           interactive={!isDrawingTool}
           onSelect={() => selectAnnotation(a.id)}
           onDelete={() => deleteAnnotation(a.id)}
+          onResizeShape={(id, data) => updateAnnotation(id, { data })}
         />
       ))}
 
@@ -299,6 +272,8 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
           draftBox.from,
           draftBox.to,
           TOOL_DEFAULTS.shape.color,
+          annotationStyle.shapeThickness,
+          annotationStyle.shapeDashed,
           width,
           height,
         )}
@@ -312,6 +287,38 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
           strokeLinejoin="round"
         />
       )}
+      {textBox && (
+        <foreignObject
+          x={textBox.point.x * width}
+          y={textBox.point.y * height}
+          width={Math.max(180, width * 0.28)}
+          height={Math.max(80, height * 0.12)}
+        >
+          <textarea
+            autoFocus
+            className="dv-annotation-textbox"
+            value={textBox.text}
+            onChange={(event) => setTextBox({ ...textBox, text: event.target.value })}
+            onPointerDown={(event) => event.stopPropagation()}
+            onBlur={() => {
+              const text = textBox.text.trim();
+              if (text) {
+                const ann: FreeTextAnnotation = {
+                  id: newId(), pageIndex, type: 'free-text', color: annotationStyle.textColor,
+                  opacity: 1, createdAt: Date.now(), updatedAt: Date.now(),
+                  data: { x: textBox.point.x, y: textBox.point.y + annotationStyle.textSize, text,
+                    fontSize: annotationStyle.textSize,
+                    fontWeight: annotationStyle.textBold ? 'bold' : 'normal',
+                    fontStyle: annotationStyle.textItalic ? 'italic' : 'normal' },
+                };
+                addAnnotation(ann);
+              }
+              setTextBox(null);
+            }}
+            style={{ color: annotationStyle.textColor, fontSize: `${annotationStyle.textSize * height}px`, fontWeight: annotationStyle.textBold ? 'bold' : 'normal', fontStyle: annotationStyle.textItalic ? 'italic' : 'normal' }}
+          />
+        </foreignObject>
+      )}
     </svg>
   );
 }
@@ -324,6 +331,7 @@ function AnnotationShape({
   interactive,
   onSelect,
   onDelete,
+  onResizeShape,
 }: {
   annotation: Annotation;
   width: number;
@@ -332,6 +340,7 @@ function AnnotationShape({
   interactive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onResizeShape: (id: string, data: ShapeAnnotation['data']) => void;
 }) {
   const handleClick = (e: ReactPointerEvent) => {
     if (!interactive) return;
@@ -403,7 +412,10 @@ function AnnotationShape({
     body = (
       <g>
         <g style={{ pointerEvents: 'none' }}>
-          {renderShapeGeometry(shape, from, to, annotation.color, width, height)}
+          {renderShapeGeometry(
+            shape, from, to, annotation.color, annotation.data.strokeWidth,
+            annotation.data.dashed ?? false, width, height,
+          )}
         </g>
         {bodyInteractive && (
           <g style={pointerStyle} onPointerDown={handleClick}>
@@ -423,6 +435,8 @@ function AnnotationShape({
         y={y}
         fontSize={annotation.data.fontSize * height}
         fill={annotation.color}
+        fontWeight={annotation.data.fontWeight}
+        fontStyle={annotation.data.fontStyle}
         style={pointerStyle}
         onPointerDown={handleClick}
       >
@@ -449,6 +463,38 @@ function AnnotationShape({
   return (
     <g className="dv-annotation" data-selected={selected || undefined}>
       {body}
+      {selected && interactive && annotation.type === 'shape' && (
+        <circle
+          cx={annotation.data.to.x * width}
+          cy={annotation.data.to.y * height}
+          r={7}
+          fill="white"
+          stroke={annotation.color}
+          strokeWidth={2}
+          style={{ pointerEvents: 'auto', cursor: 'nwse-resize' }}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            const svg = event.currentTarget.ownerSVGElement;
+            if (!svg) return;
+            const move = (moveEvent: PointerEvent) => {
+              const rect = svg.getBoundingClientRect();
+              onResizeShape(annotation.id, {
+                ...annotation.data,
+                to: {
+                  x: Math.min(1, Math.max(0, (moveEvent.clientX - rect.left) / rect.width)),
+                  y: Math.min(1, Math.max(0, (moveEvent.clientY - rect.top) / rect.height)),
+                },
+              });
+            };
+            const up = () => {
+              window.removeEventListener('pointermove', move);
+              window.removeEventListener('pointerup', up);
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', up, { once: true });
+          }}
+        />
+      )}
       {selected && interactive && (
         <g
           className="dv-annotation-delete"

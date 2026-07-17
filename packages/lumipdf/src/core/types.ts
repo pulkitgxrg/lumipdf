@@ -238,6 +238,7 @@ export interface ShapeAnnotation extends BaseAnnotation<'shape'> {
     readonly from: { x: number; y: number };
     readonly to: { x: number; y: number };
     readonly strokeWidth: number;
+    readonly dashed?: boolean;
   };
 }
 
@@ -247,7 +248,20 @@ export interface FreeTextAnnotation extends BaseAnnotation<'free-text'> {
     readonly y: number;
     readonly text: string;
     readonly fontSize: number; // fraction of page height
+    readonly fontWeight?: 'normal' | 'bold';
+    readonly fontStyle?: 'normal' | 'italic';
   };
+}
+
+export interface AnnotationStyle {
+  readonly highlightColor: string;
+  readonly shapeColor: string;
+  readonly shapeThickness: number;
+  readonly shapeDashed: boolean;
+  readonly textColor: string;
+  readonly textSize: number;
+  readonly textBold: boolean;
+  readonly textItalic: boolean;
 }
 
 export type Annotation =

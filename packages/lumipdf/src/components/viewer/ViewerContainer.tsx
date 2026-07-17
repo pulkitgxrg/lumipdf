@@ -188,6 +188,18 @@ export function ViewerContainer() {
     return map;
   }, [rows]);
 
+  const widestRow = useMemo(() => {
+    if (!document || isHorizontal) return 0;
+    const isSideways = rotation === 90 || rotation === 270;
+    return rows.reduce((widest, row) => {
+      const rowWidth = row.reduce((total, pageIndex) => {
+        const page = document.pages[pageIndex];
+        return total + (page ? (isSideways ? page.height : page.width) * zoom : 0);
+      }, 0) + Math.max(0, row.length - 1) * PAGE_SPREAD_GAP;
+      return Math.max(widest, rowWidth);
+    }, 0);
+  }, [document, isHorizontal, rotation, rows, zoom]);
+
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
@@ -520,8 +532,11 @@ export function ViewerContainer() {
           ref={contentRef}
           style={{
             height: isHorizontal ? '100%' : `${virtualizer.getTotalSize()}px`,
-            width: isHorizontal ? `${virtualizer.getTotalSize()}px` : '100%',
+            width: isHorizontal
+              ? `${virtualizer.getTotalSize()}px`
+              : `max(100%, ${widestRow}px)`,
             position: 'relative',
+            alignSelf: 'flex-start',
           }}
         >
           {virtualizer.getVirtualItems().map((virtualItem) => {

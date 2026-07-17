@@ -7,7 +7,6 @@ import type { OutlineNode, AttachmentRef } from '../../core/types';
 export function Sidebar() {
   const document = useViewerStore((s) => s.document);
   const sidebarView = useViewerStore((s) => s.sidebarView);
-  const setSidebarView = useViewerStore((s) => s.setSidebarView);
   const sidebarWidth = useViewerStore((s) => s.sidebarWidth);
   const setSidebarWidth = useViewerStore((s) => s.setSidebarWidth);
   const currentPage = useViewerStore((s) => s.currentPage);
@@ -88,24 +87,8 @@ export function Sidebar() {
       <div className="dv-sidebar-tabs">
         <button
           className="dv-sidebar-tab"
-          data-active={sidebarView === 'thumbnails'}
-          onClick={() => setSidebarView('thumbnails')}
         >
           Thumbnails
-        </button>
-        <button
-          className="dv-sidebar-tab"
-          data-active={sidebarView === 'outline'}
-          onClick={() => setSidebarView('outline')}
-        >
-          Bookmarks
-        </button>
-        <button
-          className="dv-sidebar-tab"
-          data-active={sidebarView === 'attachments'}
-          onClick={() => setSidebarView('attachments')}
-        >
-          Attachments
         </button>
       </div>
 

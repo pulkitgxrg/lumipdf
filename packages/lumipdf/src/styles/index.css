@@ -552,9 +552,9 @@
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
   overflow: hidden;
-  opacity: 0.25;
-  mix-blend-mode: multiply;
+  opacity: 0.75;
   pointer-events: none;
 }
 
@@ -568,7 +568,8 @@
 }
 
 .dv-text-layer ::selection {
-  background: var(--dv-button-toggled);
+  background: rgba(51, 107, 228, 0.72);
+  color: transparent;
 }
 
 .dv-search-layer {
@@ -578,6 +579,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 2;
 }
 
 .dv-search-highlight {
@@ -789,12 +791,14 @@
   to { transform: rotate(360deg); }
 }
 
-.dv-annotation-layer svg {
+.dv-annotation-layer {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  display: block;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -815,6 +819,17 @@
 
 .dv-annotation-delete:hover {
   opacity: 1;
+}
+
+.dv-annotation-textbox {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  resize: both;
+  border: 1px solid var(--dv-button-primary-bg);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.92);
+  outline: none;
 }
 
 .dv-marquee-rect {
