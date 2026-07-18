@@ -1,4 +1,10 @@
 # LumiPDF
 
-A high-performance, React-based PDF viewer library powered by PDF.js, with full feature parity and enhanced compatibility.
+A high-performance React PDF viewer powered by PDF.js - virtualized rendering, search, themes, and Canva-style editable annotations.
+
+**Package:** [`lumipdf`](./packages/lumipdf) · **Version:** 1.1.0
+
+```bash
+npm install lumipdf
+```
 

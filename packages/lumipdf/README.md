@@ -1,6 +1,6 @@
 # LumiPDF
 
-React PDF viewer built on PDF.js. Includes text selection, search, thumbnails, outline navigation, zoom, rotation, downloads, printing, and editable annotations.
+React PDF viewer built on PDF.js. Virtualized rendering, full-text search, thumbnails & outline, zoom/rotation, download & print, themes, and **Canva-style editable annotations**.
 
 ## Install
 
@@ -8,11 +8,45 @@ React PDF viewer built on PDF.js. Includes text selection, search, thumbnails, o
 npm install lumipdf
 ```
 
-`react`, `react-dom`, and `pdfjs-dist` are peer dependencies.
+Peer dependencies: `react`, `react-dom`, and `pdfjs-dist`.
+
+```tsx
+import { DocumentViewer } from "lumipdf";
+import "lumipdf/styles";
+
+export function App() {
+  return (
+    <div style={{ height: "100vh" }}>
+      <DocumentViewer source={{ kind: "url", url: "/sample.pdf" }} theme="auto" />
+    </div>
+  );
+}
+```
+
+## What's new in 1.1
+
+- **Canva-style annotations** — select, move, resize, delete; double-click text to re-edit
+- **Annotation format bar** — colors, opacity, thickness, fill, fonts, alignment, and more
+- **Page navigator** — compact page jumping in the viewer chrome
+- Toolbar, pinch-zoom, and rotation polish
+
+See [CHANGELOG.md](./CHANGELOG.md) for the full release notes.
+
+## Features
+
+| Area | Capabilities |
+|------|----------------|
+| Viewer | Virtualized pages, text layer, pinch zoom, fit page/width/actual size |
+| Navigation | Page navigator, thumbnails, outline, keyboard shortcuts |
+| Search | Full-text search with match highlighting and next/prev |
+| Annotations | Highlight, ink, rectangle, ellipse, line, arrow, free text |
+| Theming | `light`, `dark`, `auto`, `sepia` |
+| Sources | URL, `File`, `ArrayBuffer`, file system handles |
+| API | `DocumentViewer` props/ref, hooks, Zustand store, TypeScript types |
 
 ## Annotations
 
-Toolbar includes highlight, freehand draw, rectangle, ellipse, line, arrow, and text tools. Annotations are **viewer overlays only** — download and print always use the original PDF without annotations.
+Toolbar tools: highlight, freehand draw, rectangle, ellipse, line, arrow, and free text. Annotations are **viewer overlays only** — download and print always use the original PDF without annotations.
 
 ### Editing (Canva-style)
 
@@ -24,7 +58,7 @@ Toolbar includes highlight, freehand draw, rectangle, ellipse, line, arrow, and 
 
 ### Formatting
 
-Use annotation controls for:
+Use the annotation format bar for:
 
 - **Highlight** — color, opacity
 - **Draw** — color, thickness, dotted stroke
@@ -36,16 +70,32 @@ Style changes apply to new annotations and update the currently selected annotat
 Persist annotations with callback data:
 
 ```tsx
+import { DocumentViewer, serializeAnnotations, parseAnnotations } from "lumipdf";
+
 <DocumentViewer
-  source={{ kind: 'url', url: '/contract.pdf' }}
-  onAnnotationChange={(annotations) => localStorage.setItem('contract-annotations', JSON.stringify(annotations))}
+  source={{ kind: "url", url: "/contract.pdf" }}
+  onAnnotationChange={(annotations) => {
+    localStorage.setItem("contract-annotations", JSON.stringify(serializeAnnotations(annotations)));
+  }}
 />
 ```
 
 Use `serializeAnnotations` and `parseAnnotations` for validated stored annotation payloads.
 
+## Hooks
+
+Compose your own chrome if you do not want the default toolbar:
+
+- `useDocViewer` / `useViewerStore` - full store access
+- `useDocument`, `useNavigation`, `useZoom`, `useSearch`, `useAnnotations`
+- `useFileInput`, `useKeyboardShortcuts`, `useVirtualizer`
+
 ## Notes
 
-- PDF.js worker loads from jsDelivr by default. Configure `pdfjsLib.GlobalWorkerOptions.workerSrc` before rendering if application requires self-hosted worker assets.
+- PDF.js worker loads from jsDelivr by default. Set `pdfjsLib.GlobalWorkerOptions.workerSrc` before render if you need self-hosted worker assets.
 - Remote PDFs need CORS access.
-- Package supports React 18+.
+- Supports React 18+.
+
+## License
+
+MIT
