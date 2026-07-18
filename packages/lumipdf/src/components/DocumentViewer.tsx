@@ -19,10 +19,28 @@ import { Sidebar } from "./viewer/Sidebar";
 import { PasswordDialog } from "./dialogs/PasswordDialog";
 import { PropertiesDialog } from "./dialogs/PropertiesDialog";
 import type {
+  FileSource,
   PdfViewerProps,
   PdfViewerRef,
   AnnotationTool,
 } from "../core/types";
+
+/** Stable identity for a FileSource so reloads only happen when content changes. */
+function getSourceKey(source: FileSource | undefined | null): string | null {
+  if (!source) return null;
+  switch (source.kind) {
+    case "url":
+      return `url:${source.url}\0${source.filename ?? ""}`;
+    case "file":
+      return `file:${source.file.name}\0${source.file.size}\0${source.file.lastModified}`;
+    case "handle":
+      return `handle:${source.handle.name}`;
+    case "buffer":
+      return `buffer:${source.name}\0${source.buffer.byteLength}\0${source.type ?? ""}`;
+    default:
+      return null;
+  }
+}
 
 interface InnerProps extends PdfViewerProps {
   innerRef: React.Ref<PdfViewerRef>;
@@ -115,9 +133,14 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
     }
   }, [initialZoom, setZoom]);
 
+  // Only reopen when the source *content* changes - not when the parent
+  // passes a new object with the same url/file (e.g. UI state re-renders).
+  const sourceKey = useMemo(() => getSourceKey(source), [source]);
   useEffect(() => {
     if (source) openDocument(source);
-  }, [source, openDocument]);
+    // source is read from the render that produced sourceKey
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: identity, not reference
+  }, [sourceKey, openDocument]);
 
   useEffect(() => {
     if (page !== undefined) goToPage(page);
@@ -161,7 +184,7 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
   useKeyboardShortcuts(true);
 
   useImperativeHandle(
-    innerRef,
+    innerRef as never,
     () => ({
       goToPage,
       zoomIn,

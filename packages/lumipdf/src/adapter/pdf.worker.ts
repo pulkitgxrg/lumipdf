@@ -149,11 +149,9 @@ const api: PdfWorkerAPI = {
     );
     const ctx = canvas.getContext('2d')!;
 
-    const canvasFactory = new OffscreenCanvasFactory();
     await page.render({
       canvasContext: ctx as unknown as CanvasRenderingContext2D,
       viewport,
-      canvasFactory: canvasFactory as unknown as import('pdfjs-dist').CanvasFactory,
     }).promise;
 
     return canvas.transferToImageBitmap();

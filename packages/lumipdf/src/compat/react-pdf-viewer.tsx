@@ -162,19 +162,19 @@ export interface ViewerProps {
   onDocumentLoad?: (e: DocumentLoadEvent) => void;
   onPageChange?: (e: PageChangeEvent) => void;
   onZoom?: (e: ZoomEvent) => void;
-  /** @deprecated Ignored — lumipdf manages its own loading indicator. */
+  /** @deprecated Ignored - lumipdf manages its own loading indicator. */
   renderLoader?: (percentages: number) => React.ReactElement;
   /** @deprecated Use onError on the host component instead. */
   renderError?: (error: LoadError) => React.ReactElement;
-  /** @deprecated Ignored — lumipdf manages its own scroll mode. */
+  /** @deprecated Ignored - lumipdf manages its own scroll mode. */
   scrollMode?: ScrollMode;
-  /** @deprecated Ignored — lumipdf manages its own view/spread mode. */
+  /** @deprecated Ignored - lumipdf manages its own view/spread mode. */
   viewMode?: ViewMode;
   withCredentials?: boolean;
   httpHeaders?: Record<string, string>;
   characterMap?: { isCompressed: boolean; url: string };
   enableSmoothScroll?: boolean;
-  /** @deprecated Ignored — lumipdf manages its own page render pipeline. */
+  /** @deprecated Ignored - lumipdf manages its own page render pipeline. */
   renderPage?: (props: RenderPageProps) => React.ReactElement;
 }
 
@@ -853,7 +853,7 @@ export function fullScreenPlugin(): Plugin & FullScreenPluginApi {
 
   const EnterFullScreenButton: React.FC = () => <EnterFullScreen />;
 
-  // Renders only while in fullscreen — use as an overlay exit affordance.
+  // Renders only while in fullscreen - use as an overlay exit affordance.
   const ExitFullScreen: React.FC = function ExitFullScreen() {
     const isFullscreen = useViewerStore((s) => s.isFullscreen);
     const toggleFullscreen = useViewerStore((s) => s.toggleFullscreen);
