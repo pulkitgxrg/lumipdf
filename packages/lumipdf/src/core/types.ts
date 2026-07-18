@@ -216,13 +216,16 @@ export interface BaseAnnotation<
 }
 
 export interface HighlightAnnotation extends BaseAnnotation<'highlight'> {
-  readonly data: { readonly rects: ReadonlyArray<{ x: number; y: number; width: number; height: number }> };
+  readonly data: {
+    readonly rects: ReadonlyArray<{ x: number; y: number; width: number; height: number }>;
+  };
 }
 
 export interface InkAnnotation extends BaseAnnotation<'ink'> {
   readonly data: {
     readonly paths: ReadonlyArray<ReadonlyArray<{ x: number; y: number }>>;
     readonly thickness: number;
+    readonly dashed?: boolean;
   };
 }
 
@@ -239,8 +242,15 @@ export interface ShapeAnnotation extends BaseAnnotation<'shape'> {
     readonly to: { x: number; y: number };
     readonly strokeWidth: number;
     readonly dashed?: boolean;
+    readonly filled?: boolean;
+    /** Fill color when filled (defaults to stroke color). */
+    readonly fillColor?: string;
+    /** Fill opacity 0–1 when filled (defaults to 0.25). */
+    readonly fillOpacity?: number;
   };
 }
+
+export type TextAlign = 'left' | 'center' | 'right';
 
 export interface FreeTextAnnotation extends BaseAnnotation<'free-text'> {
   readonly data: {
@@ -250,18 +260,39 @@ export interface FreeTextAnnotation extends BaseAnnotation<'free-text'> {
     readonly fontSize: number; // fraction of page height
     readonly fontWeight?: 'normal' | 'bold';
     readonly fontStyle?: 'normal' | 'italic';
+    readonly underline?: boolean;
+    readonly fontFamily?: string;
+    readonly textAlign?: TextAlign;
+    readonly backgroundColor?: string;
+    /** Optional fixed box width as fraction of page width (for wrap + resize). */
+    readonly boxWidth?: number;
   };
 }
 
 export interface AnnotationStyle {
   readonly highlightColor: string;
+  readonly highlightOpacity: number;
   readonly shapeColor: string;
+  readonly shapeOpacity: number;
   readonly shapeThickness: number;
   readonly shapeDashed: boolean;
+  readonly shapeFilled: boolean;
+  readonly shapeFillColor: string;
+  readonly shapeFillOpacity: number;
+  readonly inkColor: string;
+  readonly inkOpacity: number;
+  readonly inkThickness: number;
+  readonly inkDashed: boolean;
   readonly textColor: string;
+  readonly textOpacity: number;
   readonly textSize: number;
   readonly textBold: boolean;
   readonly textItalic: boolean;
+  readonly textUnderline: boolean;
+  readonly textAlign: TextAlign;
+  readonly textFontFamily: string;
+  readonly textBackground: string;
+  readonly textBackgroundEnabled: boolean;
 }
 
 export type Annotation =

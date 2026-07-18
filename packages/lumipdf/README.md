@@ -12,7 +12,26 @@ npm install lumipdf
 
 ## Annotations
 
-Toolbar includes highlight, freehand draw, rectangle, ellipse, line, arrow, and text tools. Text is written directly in a PDF overlay. Use annotation controls for highlight color; shape color, thickness, and dotted strokes; text color, size, bold, and italic.
+Toolbar includes highlight, freehand draw, rectangle, ellipse, line, arrow, and text tools. Annotations are **viewer overlays only** — download and print always use the original PDF without annotations.
+
+### Editing (Canva-style)
+
+- Click an annotation to select it (dashed box + corner handles)
+- Drag to move; drag corner handles to resize
+- Delete with the red ×, **Delete/Backspace**, or the toolbar action
+- Double-click text to re-edit content
+- Escape clears selection and exits the active tool
+
+### Formatting
+
+Use annotation controls for:
+
+- **Highlight** — color, opacity
+- **Draw** — color, thickness, dotted stroke
+- **Shapes** — color, thickness, dotted, filled
+- **Text** — color, size, font family, align, bold, italic, underline, background
+
+Style changes apply to new annotations and update the currently selected annotation.
 
 Persist annotations with callback data:
 

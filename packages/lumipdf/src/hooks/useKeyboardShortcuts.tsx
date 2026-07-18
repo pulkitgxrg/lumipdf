@@ -10,6 +10,10 @@ export function useKeyboardShortcuts(enabled: boolean = true) {
   const zoomOut = useViewerStore((s) => s.zoomOut);
   const toggleSidebar = useViewerStore((s) => s.toggleSidebar);
   const setSearchOpen = useViewerStore((s) => s.setSearchOpen);
+  const selectedAnnotationId = useViewerStore((s) => s.selectedAnnotationId);
+  const selectAnnotation = useViewerStore((s) => s.selectAnnotation);
+  const deleteAnnotation = useViewerStore((s) => s.deleteAnnotation);
+  const setActiveTool = useViewerStore((s) => s.setActiveTool);
   const rootElement = useViewerStore((s) => s._rootElement);
 
   useEffect(() => {
@@ -27,10 +31,23 @@ export function useKeyboardShortcuts(enabled: boolean = true) {
 
       if (e.key === 'Escape') {
         setSearchOpen(false);
+        selectAnnotation(null);
+        setActiveTool(null);
         return;
       }
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (
+        (e.key === 'Delete' || e.key === 'Backspace') &&
+        selectedAnnotationId &&
+        !e.metaKey &&
+        !e.ctrlKey
+      ) {
+        e.preventDefault();
+        deleteAnnotation(selectedAnnotationId);
         return;
       }
 
@@ -96,5 +113,9 @@ export function useKeyboardShortcuts(enabled: boolean = true) {
     zoomOut,
     toggleSidebar,
     setSearchOpen,
+    selectedAnnotationId,
+    selectAnnotation,
+    deleteAnnotation,
+    setActiveTool,
   ]);
 }

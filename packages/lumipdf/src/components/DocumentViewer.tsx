@@ -15,6 +15,7 @@ import {
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { ViewerContainer } from "./viewer/ViewerContainer";
 import { Toolbar } from "./toolbar/Toolbar";
+import { PageNavigator } from "./toolbar/PageNavigator";
 import { Sidebar } from "./viewer/Sidebar";
 import { PasswordDialog } from "./dialogs/PasswordDialog";
 import { PropertiesDialog } from "./dialogs/PropertiesDialog";
@@ -253,7 +254,10 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
 
       <div className="dv-body">
         {sidebarOpen && pdfDocument && <Sidebar />}
-        <ViewerContainer />
+        <div className="dv-main-stage">
+          <ViewerContainer />
+          {pdfDocument && <PageNavigator />}
+        </div>
       </div>
 
       {isPasswordError && pendingPassword && (

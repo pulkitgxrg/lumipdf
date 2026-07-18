@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useViewerStore } from '../../hooks/useDocumentViewer';
 import type { AdapterFeatures, AnnotationTool, SpreadMode } from '../../core/types';
 import { useStrings, formatString } from '../../constants/strings';
+import { AnnotationStyleModal } from './AnnotationStyleModal';
 
 interface ToolbarProps {
   features?: AdapterFeatures | undefined;
@@ -54,8 +55,6 @@ export function Toolbar({ features }: ToolbarProps) {
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
   const toggleSidebar = useViewerStore((s) => s.toggleSidebar);
   const zoom = useViewerStore((s) => s.zoom);
-  const zoomIn = useViewerStore((s) => s.zoomIn);
-  const zoomOut = useViewerStore((s) => s.zoomOut);
   const setZoom = useViewerStore((s) => s.setZoom);
   const fitMode = useViewerStore((s) => s.fitMode);
   const setFitMode = useViewerStore((s) => s.setFitMode);
@@ -65,11 +64,7 @@ export function Toolbar({ features }: ToolbarProps) {
   const setCursorMode = useViewerStore((s) => s.setCursorMode);
   const rotateClockwise = useViewerStore((s) => s.rotateClockwise);
   const rotateCounterClockwise = useViewerStore((s) => s.rotateCounterClockwise);
-  const currentPage = useViewerStore((s) => s.currentPage);
   const pageCount = useViewerStore((s) => s.document?.pageCount ?? 0);
-  const goToPage = useViewerStore((s) => s.goToPage);
-  const nextPage = useViewerStore((s) => s.nextPage);
-  const prevPage = useViewerStore((s) => s.prevPage);
   const search = useViewerStore((s) => s.search);
   const clearSearch = useViewerStore((s) => s.clearSearch);
   const nextMatch = useViewerStore((s) => s.nextMatch);
@@ -79,8 +74,8 @@ export function Toolbar({ features }: ToolbarProps) {
   const currentMatchIndex = useViewerStore((s) => s.currentMatchIndex);
   const activeTool = useViewerStore((s) => s.activeAnnotationTool);
   const setActiveTool = useViewerStore((s) => s.setActiveTool);
-  const annotationStyle = useViewerStore((s) => s.annotationStyle);
-  const setAnnotationStyle = useViewerStore((s) => s.setAnnotationStyle);
+  const annotations = useViewerStore((s) => s.annotations);
+  const clearAnnotations = useViewerStore((s) => s.clearAnnotations);
   const downloadDocument = useViewerStore((s) => s.downloadDocument);
   const printDocument = useViewerStore((s) => s.printDocument);
   const toggleFullscreen = useViewerStore((s) => s.toggleFullscreen);
@@ -184,11 +179,12 @@ export function Toolbar({ features }: ToolbarProps) {
       <div className="dv-toolbar" role="toolbar" aria-label="Document viewer toolbar">
         <div className="dv-toolbar-group">
           <button
-            className="dv-button"
+            className="dv-tool-btn"
             onClick={toggleSidebar}
             aria-expanded={sidebarOpen}
             aria-label={strings.toolbar.sidebarToggle}
             title={strings.toolbar.sidebarToggle}
+            data-toggled={sidebarOpen}
           >
             <svg viewBox="0 0 16 16" fill="currentColor">
               <path d="M2 2h4v12H2V2zm5 0h7v12H7V2z" />
@@ -196,52 +192,130 @@ export function Toolbar({ features }: ToolbarProps) {
           </button>
         </div>
 
-        <div className="dv-toolbar-group dv-toolbar-page-nav">
-          <button
-            className="dv-button"
-            onClick={prevPage}
-            disabled={currentPage <= 0}
-            aria-label={strings.navigation.previousPage}
-            title={strings.navigation.previousPage}
-          >
-            <svg viewBox="0 0 16 16" fill="currentColor">
-              <path d="M10 4L6 8l4 4V4z" />
-            </svg>
-          </button>
-          <input
-            type="number"
-            className="dv-page-input"
-            value={currentPage + 1}
-            min={1}
-            max={pageCount || 1}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              if (!isNaN(val)) goToPage(val - 1);
-            }}
-            aria-label={strings.navigation.pageInput}
-          />
-          <span className="dv-page-count">
-            / {pageCount}
-          </span>
-          <button
-            className="dv-button"
-            onClick={nextPage}
-            disabled={currentPage >= pageCount - 1}
-            aria-label={strings.navigation.nextPage}
-            title={strings.navigation.nextPage}
-          >
-            <svg viewBox="0 0 16 16" fill="currentColor">
-              <path d="M6 4l4 4-4 4V4z" />
-            </svg>
-          </button>
+        <div className="dv-toolbar-spacer" />
+
+        <div className="dv-toolbar-center">
+          <div className="dv-tool-cluster">
+            <button
+              type="button"
+              className="dv-tool-btn"
+              data-toggled={cursorMode === 'hand'}
+              aria-pressed={cursorMode === 'hand'}
+              title="Hand tool"
+              aria-label="Hand tool"
+              onClick={() => {
+                setCursorMode(cursorMode === 'hand' ? 'select' : 'hand');
+                setActiveTool(null);
+              }}
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M6.5 1.5a1 1 0 0 1 1 1V7h.5V3a1 1 0 1 1 2 0v4h.5V3.75a1 1 0 1 1 2 0V9h.25a2.25 2.25 0 0 1 2.25 2.25v.5A3.25 3.25 0 0 1 11.75 15H7.1A3.1 3.1 0 0 1 4 11.9V6.5a1 1 0 0 1 2 0V7h.5V2.5a1 1 0 0 1 1-1z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="dv-tool-btn"
+              data-toggled={cursorMode === 'select' && !activeTool}
+              aria-pressed={cursorMode === 'select' && !activeTool}
+              title="Select"
+              aria-label="Select"
+              onClick={() => {
+                setCursorMode('select');
+                setActiveTool(null);
+              }}
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M3.5 2.2l8.8 5.3-3.6.7 1.7 4.1-1.6.7-1.7-4.1-2.4 2.6V2.2z" />
+              </svg>
+            </button>
+          </div>
+
+          {features?.annotations && (
+            <div className="dv-tool-cluster" role="radiogroup" aria-label="Annotation tools">
+              {ANNOTATION_TOOLS.map(({ tool, label, path }) => {
+                const isActive = activeTool === tool;
+                return (
+                  <button
+                    key={tool}
+                    type="button"
+                    className="dv-tool-btn"
+                    role="radio"
+                    aria-checked={isActive}
+                    data-toggled={isActive}
+                    aria-label={label}
+                    title={label}
+                    onClick={() => {
+                      setCursorMode('select');
+                      setActiveTool(isActive ? null : tool);
+                    }}
+                  >
+                    <svg viewBox="0 0 16 16" fill="currentColor">
+                      <path d={path} />
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {features?.rotation && (
+            <div className="dv-tool-cluster">
+              <button
+                type="button"
+                className="dv-tool-btn"
+                onClick={rotateCounterClockwise}
+                aria-label={strings.toolbar.rotateCounterClockwise}
+                title={strings.toolbar.rotateCounterClockwise}
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 3a5 5 0 1 1-5 5H1a7 7 0 1 0 7-7V0L4 2l4 2V3z" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className="dv-tool-btn"
+                onClick={rotateClockwise}
+                aria-label={strings.toolbar.rotateClockwise}
+                title={strings.toolbar.rotateClockwise}
+              >
+                <svg viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 3a5 5 0 1 0 5 5h2A7 7 0 1 1 8 1V0l4 2-4 2V3z" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="dv-toolbar-spacer" />
 
-        {features?.search && (
-          <div className="dv-toolbar-group">
+        <div className="dv-toolbar-group dv-toolbar-end">
+          {features?.zoom !== false && (
+            <select
+              className="dv-zoom-select"
+              value={zoomValue}
+              onChange={(e) => handleZoomSelect(e.target.value)}
+              aria-label="Zoom level"
+            >
+              {zoomValue === 'live' && <option value="live">{zoomPct}%</option>}
+              <optgroup label="Fit">
+                <option value="fit-page">Fit page</option>
+                <option value="fit-width">Fit width</option>
+                <option value="actual">Actual size</option>
+              </optgroup>
+              <option value="0.5">50%</option>
+              <option value="0.75">75%</option>
+              <option value="1">100%</option>
+              <option value="1.25">125%</option>
+              <option value="1.5">150%</option>
+              <option value="2">200%</option>
+              <option value="3">300%</option>
+              <option value="5">500%</option>
+            </select>
+          )}
+
+          {features?.search && (
             <button
-              className="dv-button"
+              className="dv-tool-btn"
               onClick={() => setSearchOpen(!searchOpen)}
               aria-expanded={searchOpen}
               aria-label={strings.toolbar.searchToggle}
@@ -252,169 +326,125 @@ export function Toolbar({ features }: ToolbarProps) {
                 <path d="M6 1a5 5 0 1 0 3.09 8.95l4.48 4.49 1.42-1.42-4.49-4.48A5 5 0 0 0 6 1zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" />
               </svg>
             </button>
-          </div>
-        )}
-
-        <div className="dv-toolbar-group">
-          {features?.zoom !== false && (
-            <>
-              <button
-                className="dv-button"
-                onClick={zoomOut}
-                aria-label={strings.toolbar.zoomOut}
-                title={strings.toolbar.zoomOut}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M4 7h8v2H4V7z" />
-                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3z" />
-                </svg>
-              </button>
-              <select
-                className="dv-zoom-select"
-                value={zoomValue}
-                onChange={(e) => handleZoomSelect(e.target.value)}
-                aria-label="Zoom level"
-              >
-                {zoomValue === 'live' && <option value="live">{zoomPct}%</option>}
-                <optgroup label="Fit">
-                  <option value="fit-page">Fit page</option>
-                  <option value="fit-width">Fit width</option>
-                  <option value="actual">Actual size</option>
-                </optgroup>
-                <option value="0.5">50%</option>
-                <option value="0.75">75%</option>
-                <option value="1">100%</option>
-                <option value="1.25">125%</option>
-                <option value="1.5">150%</option>
-                <option value="2">200%</option>
-                <option value="3">300%</option>
-                <option value="5">500%</option>
-              </select>
-              <button
-                className="dv-button"
-                onClick={zoomIn}
-                aria-label={strings.toolbar.zoomIn}
-                title={strings.toolbar.zoomIn}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M7 4h2v3h3v2H9v3H7V9H4V7h3V4z" />
-                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3z" />
-                </svg>
-              </button>
-            </>
           )}
-        </div>
 
-        {features?.download && (
-          <div className="dv-toolbar-group">
+          {features?.download && (
             <button
-              className="dv-button"
+              className="dv-tool-btn"
               onClick={() => downloadDocument()}
               aria-label={strings.toolbar.download}
-              title={strings.toolbar.download}
+              title={`${strings.toolbar.download} (original PDF, no annotations)`}
             >
               <svg viewBox="0 0 16 16" fill="currentColor">
                 <path d="M7 1h2v6h3l-4 4-4-4h3V1zM3 13h10v2H3v-2z" />
               </svg>
             </button>
-          </div>
-        )}
-
-        {features?.rotation && (
-          <div className="dv-toolbar-group">
-            <button className="dv-button" onClick={rotateCounterClockwise} aria-label={strings.toolbar.rotateCounterClockwise} title={strings.toolbar.rotateCounterClockwise}>
-              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 1 1-5 5H1a7 7 0 1 0 7-7V0L4 2l4 2V3z" /></svg>
-            </button>
-            <button className="dv-button" onClick={rotateClockwise} aria-label={strings.toolbar.rotateClockwise} title={strings.toolbar.rotateClockwise}>
-              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 1 0 5 5h2A7 7 0 1 1 8 1V0l4 2-4 2V3z" /></svg>
-            </button>
-          </div>
-        )}
-
-        <div className="dv-toolbar-overflow" ref={moreMenuRef}>
-          <button
-            className="dv-button dv-toolbar-more-button"
-            onClick={() => setMoreOpen((open) => !open)}
-            aria-expanded={moreOpen}
-            aria-haspopup="menu"
-            aria-label="More tools"
-            title="More tools"
-          >
-            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" /></svg>
-          </button>
-          {moreOpen && (
-            <div className="dv-toolbar-more-menu" role="menu" aria-label="More tools">
-              {features?.zoom !== false && (
-                <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { setCursorMode(cursorMode === 'marquee' ? 'select' : 'marquee'); setMoreOpen(false); }} aria-pressed={cursorMode === 'marquee'}>
-                  Marquee zoom
-                </button>
-              )}
-              {pageCount > 1 && (
-                <label className="dv-toolbar-menu-field">Page layout
-                  <select value={spreadMode} onChange={(e) => setSpreadMode(e.target.value as SpreadMode)} aria-label="Page layout">
-                    <option value="none">Single page</option><option value="even">Two pages</option><option value="odd">Two pages (cover)</option>
-                  </select>
-                </label>
-              )}
-              {(features?.print || features?.fullscreen || hasDocument) && (
-                <div className="dv-toolbar-menu-row">
-                  {features?.print && <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { printDocument(); setMoreOpen(false); }}>Print</button>}
-                  {features?.fullscreen && <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { toggleFullscreen(); setMoreOpen(false); }}>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</button>}
-                  {hasDocument && <button className="dv-toolbar-menu-item" role="menuitem" onClick={() => { setPropertiesOpen(true); setMoreOpen(false); }}>Properties</button>}
-                </div>
-              )}
-              {features?.annotations && (
-                <div className="dv-toolbar-menu-section" role="radiogroup" aria-label="Annotation tools">
-                  <span className="dv-toolbar-menu-heading">Annotate</span>
-                  {ANNOTATION_TOOLS.map(({ tool, label }) => {
-              const isActive = activeTool === tool;
-              return (
-                <button
-                  key={tool}
-                  className="dv-toolbar-menu-item"
-                  role="radio"
-                  aria-checked={isActive}
-                  data-toggled={isActive}
-                  onClick={() => setActiveTool(isActive ? null : tool)}
-                >
-                  {label}
-                </button>
-              );
-                  })}
-                  {activeTool === 'highlight' && (
-                    <label className="dv-toolbar-menu-field">Highlight color
-                      <input type="color" value={annotationStyle.highlightColor} onChange={(e) => setAnnotationStyle({ highlightColor: e.target.value })} />
-                    </label>
-                  )}
-                  {activeTool && ['rectangle', 'ellipse', 'line', 'arrow'].includes(activeTool) && (
-                    <>
-                      <label className="dv-toolbar-menu-field">Shape color
-                        <input type="color" value={annotationStyle.shapeColor} onChange={(e) => setAnnotationStyle({ shapeColor: e.target.value })} />
-                      </label>
-                      <label className="dv-toolbar-menu-field">Thickness
-                        <input type="range" min="0.001" max="0.015" step="0.001" value={annotationStyle.shapeThickness} onChange={(e) => setAnnotationStyle({ shapeThickness: Number(e.target.value) })} />
-                      </label>
-                      <label className="dv-toolbar-menu-item"><input type="checkbox" checked={annotationStyle.shapeDashed} onChange={(e) => setAnnotationStyle({ shapeDashed: e.target.checked })} /> Dotted</label>
-                    </>
-                  )}
-                  {activeTool === 'free-text' && (
-                    <>
-                      <label className="dv-toolbar-menu-field">Text color
-                        <input type="color" value={annotationStyle.textColor} onChange={(e) => setAnnotationStyle({ textColor: e.target.value })} />
-                      </label>
-                      <label className="dv-toolbar-menu-field">Text size
-                        <input type="range" min="0.012" max="0.08" step="0.002" value={annotationStyle.textSize} onChange={(e) => setAnnotationStyle({ textSize: Number(e.target.value) })} />
-                      </label>
-                      <label className="dv-toolbar-menu-item"><input type="checkbox" checked={annotationStyle.textBold} onChange={(e) => setAnnotationStyle({ textBold: e.target.checked })} /> Bold</label>
-                      <label className="dv-toolbar-menu-item"><input type="checkbox" checked={annotationStyle.textItalic} onChange={(e) => setAnnotationStyle({ textItalic: e.target.checked })} /> Italic</label>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
           )}
+
+          <div className="dv-toolbar-overflow" ref={moreMenuRef}>
+            <button
+              className="dv-tool-btn dv-toolbar-more-button"
+              onClick={() => setMoreOpen((open) => !open)}
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
+              aria-label="More tools"
+              title="More tools"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M3 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm5 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" />
+              </svg>
+            </button>
+            {moreOpen && (
+              <div className="dv-toolbar-more-menu" role="menu" aria-label="More tools">
+                {features?.zoom !== false && (
+                  <button
+                    className="dv-toolbar-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setCursorMode(cursorMode === 'marquee' ? 'select' : 'marquee');
+                      setMoreOpen(false);
+                    }}
+                    aria-pressed={cursorMode === 'marquee'}
+                  >
+                    Marquee zoom
+                  </button>
+                )}
+                {pageCount > 1 && (
+                  <label className="dv-toolbar-menu-field">
+                    Page layout
+                    <select
+                      value={spreadMode}
+                      onChange={(e) => setSpreadMode(e.target.value as SpreadMode)}
+                      aria-label="Page layout"
+                    >
+                      <option value="none">Single page</option>
+                      <option value="even">Two pages</option>
+                      <option value="odd">Two pages (cover)</option>
+                    </select>
+                  </label>
+                )}
+                {(features?.print || features?.fullscreen || hasDocument) && (
+                  <div className="dv-toolbar-menu-row">
+                    {features?.print && (
+                      <button
+                        className="dv-toolbar-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          printDocument();
+                          setMoreOpen(false);
+                        }}
+                      >
+                        Print
+                      </button>
+                    )}
+                    {features?.fullscreen && (
+                      <button
+                        className="dv-toolbar-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          toggleFullscreen();
+                          setMoreOpen(false);
+                        }}
+                      >
+                        {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                      </button>
+                    )}
+                    {hasDocument && (
+                      <button
+                        className="dv-toolbar-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setPropertiesOpen(true);
+                          setMoreOpen(false);
+                        }}
+                      >
+                        Properties
+                      </button>
+                    )}
+                  </div>
+                )}
+                {features?.annotations && annotations.length > 0 && (
+                  <div className="dv-toolbar-menu-section">
+                    <span className="dv-toolbar-menu-heading">Annotations</span>
+                    <button
+                      className="dv-toolbar-menu-item"
+                      type="button"
+                      onClick={() => {
+                        clearAnnotations();
+                        setMoreOpen(false);
+                      }}
+                    >
+                      Clear all annotations
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {features?.annotations && <AnnotationStyleModal />}
 
       {searchOpen && features?.search && (
         <div className="dv-search-bar" role="search">

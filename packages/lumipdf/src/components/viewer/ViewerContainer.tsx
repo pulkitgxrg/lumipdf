@@ -393,6 +393,68 @@ export function ViewerContainer() {
   }, [applyLiveScale, commitGesture]);
 
   useEffect(() => {
+    if (cursorMode !== 'hand') return;
+    const el = scrollRef.current;
+    if (!el) return;
+
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('button, input, textarea, select, a, .dv-annotation-layer')) {
+        return;
+      }
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      el.dataset.panning = 'true';
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      e.preventDefault();
+    };
+
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      el.scrollLeft -= dx;
+      el.scrollTop -= dy;
+    };
+
+    const onUp = (e: PointerEvent) => {
+      if (!dragging) return;
+      dragging = false;
+      delete el.dataset.panning;
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+    return () => {
+      delete el.dataset.panning;
+      el.removeEventListener('pointerdown', onDown);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+    };
+  }, [cursorMode]);
+
+  useEffect(() => {
     if (cursorMode !== 'marquee') {
       setMarquee(null);
       return;
@@ -517,6 +579,7 @@ export function ViewerContainer() {
       tabIndex={0}
       role="region"
       aria-label="Document content"
+      data-cursor={cursorMode}
       data-marquee={cursorMode === 'marquee' || undefined}
     >
       {showState ? (
