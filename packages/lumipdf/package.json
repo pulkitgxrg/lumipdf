@@ -1,6 +1,6 @@
 {
   "name": "lumipdf",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "a react based pdf viewer library based on pdf.js",
   "type": "module",
   "scripts": {
