@@ -1,0 +1,2 @@
+echo "husky: running lint and type checks before push..."
+yarn lint && yarn check-types
