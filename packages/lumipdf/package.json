@@ -1,6 +1,6 @@
 {
   "name": "lumipdf",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "React PDF viewer built on PDF.js - virtualized pages, search, themes, and Canva-style editable annotations",
   "type": "module",
   "scripts": {

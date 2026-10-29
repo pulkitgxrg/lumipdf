@@ -2,6 +2,31 @@
 
 All notable changes to **lumipdf** are documented in this file.
 
+## [1.1.1] - 2026-10-29
+
+Patch release fixing overlays on rotated pages.
+
+### Fixes
+
+- **Annotations rotate with the page** — highlights, ink, shapes, free text and sticky notes now stay attached to the content they were placed on when a page is rotated left or right, instead of staying fixed in their screen position
+- Drawing, moving and resizing annotations works correctly on rotated pages, and resize handle cursors follow the rotation
+- **Text selection** lines up with the page content on rotated pages
+- **Search highlights** land on the matched text on rotated pages
+
+### API
+
+- `AnnotationLayer`, `TextLayer` and `SearchHighlightLayer` accept an optional `rotation` prop (`0 | 90 | 180 | 270`, default `0`). `DocumentViewer` passes it automatically; only needed if you render these layers yourself
+
+### Upgrade notes
+
+```bash
+npm install lumipdf@1.1.1
+```
+
+No breaking API changes. Annotation coordinates are now always relative to the unrotated page. Annotations created at 0° (and any saved with `serializeAnnotations`) are unaffected; annotations drawn on a rotated page in `1.1.0` were saved relative to the rotated view and may appear shifted.
+
+---
+
 ## [1.1.0] - 2026-07-18
 
 Major viewer UX release: Canva-style annotation editing, richer formatting controls, page navigation chrome, and toolbar polish.
