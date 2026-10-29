@@ -18,7 +18,11 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "yarn@1.22.22",
+  "overrides": {
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2"
+  },
+  "packageManager": "bun@1.4.4",
   "workspaces": [
     "apps/*",
     "packages/*"

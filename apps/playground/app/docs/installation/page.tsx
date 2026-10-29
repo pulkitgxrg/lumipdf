@@ -21,13 +21,14 @@ export default function InstallationPage() {
     <>
       <DocsH1>Installation</DocsH1>
       <DocsLead>
-        Add LumiPDF to your React app with npm, yarn, or pnpm. Peer dependencies must be
+        Add LumiPDF to your React app with npm, yarn, bun, or pnpm. Peer dependencies must be
         installed in your project.
       </DocsLead>
 
       <DocsH2 id="package">Package</DocsH2>
       <CodeBlock language="bash" code="npm install lumipdf" />
       <CodeBlock language="bash" code="yarn add lumipdf" />
+      <CodeBlock language="bash" code="bun add lumipdf" />
       <CodeBlock language="bash" code="pnpm add lumipdf" />
 
       <DocsH2 id="peers">Peer dependencies</DocsH2>
