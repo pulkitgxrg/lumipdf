@@ -13,7 +13,10 @@ export interface AnnotationLayerProps {
   pageIndex: number;
   width: number;
   height: number;
+  rotation?: Rotation;
 }
+
+type Rotation = 0 | 90 | 180 | 270;
 
 interface Point {
   x: number;
@@ -53,6 +56,42 @@ function pointsToPath(points: Point[], width: number, height: number): string {
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));
+}
+
+function toPagePoint(
+  e: { clientX: number; clientY: number },
+  rect: DOMRect,
+  rotation: Rotation,
+): Point {
+  const u = clamp01((e.clientX - rect.left) / rect.width);
+  const v = clamp01((e.clientY - rect.top) / rect.height);
+  switch (rotation) {
+    case 90:
+      return { x: v, y: 1 - u };
+    case 180:
+      return { x: 1 - u, y: 1 - v };
+    case 270:
+      return { x: 1 - v, y: u };
+    default:
+      return { x: u, y: v };
+  }
+}
+
+function rotationTransform(
+  rotation: Rotation,
+  width: number,
+  height: number,
+): string | undefined {
+  switch (rotation) {
+    case 90:
+      return `translate(${width} 0) rotate(90)`;
+    case 180:
+      return `translate(${width} ${height}) rotate(180)`;
+    case 270:
+      return `translate(0 ${height}) rotate(270)`;
+    default:
+      return undefined;
+  }
 }
 
 function unionBBox(boxes: BBox[]): BBox | null {
@@ -379,7 +418,16 @@ function renderShapeGeometry(
   );
 }
 
-export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerProps) {
+export function AnnotationLayer({
+  pageIndex,
+  width: layerWidth,
+  height: layerHeight,
+  rotation = 0,
+}: AnnotationLayerProps) {
+  const isSideways = rotation === 90 || rotation === 270;
+  const width = isSideways ? layerHeight : layerWidth;
+  const height = isSideways ? layerWidth : layerHeight;
+
   const annotations = useViewerStore((s) => s.annotations);
   const activeTool = useViewerStore((s) => s.activeAnnotationTool);
   const selectedId = useViewerStore((s) => s.selectedAnnotationId);
@@ -402,13 +450,7 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
 
   const isDrawingTool = activeTool !== null;
 
-  const toPoint = (e: { clientX: number; clientY: number }): Point => {
-    const rect = svgRef.current!.getBoundingClientRect();
-    return {
-      x: clamp01((e.clientX - rect.left) / rect.width),
-      y: clamp01((e.clientY - rect.top) / rect.height),
-    };
-  };
+  const toPoint = (e: { clientX: number; clientY: number }): Point => toPagePoint(e, svgRef.current!.getBoundingClientRect(), rotation);
 
   const commitAnnotationUpdate = (next: Annotation) => {
     const { id, pageIndex: _p, type: _t, ...rest } = next;
@@ -537,8 +579,8 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
     <svg
       ref={svgRef}
       className="dv-annotation-layer"
-      width={width}
-      height={height}
+      width={layerWidth}
+      height={layerHeight}
       style={{
         pointerEvents: isDrawingTool || selectedId ? 'auto' : 'none',
         touchAction: 'none',
@@ -548,139 +590,142 @@ export function AnnotationLayer({ pageIndex, width, height }: AnnotationLayerPro
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
-      {pageAnnotations.map((a) => (
-        <AnnotationShape
-          key={a.id}
-          annotation={a}
-          width={width}
-          height={height}
-          selected={a.id === selectedId}
-          interactive={!isDrawingTool}
-          onSelect={() => selectAnnotation(a.id)}
-          onDelete={() => deleteAnnotation(a.id)}
-          onCommit={commitAnnotationUpdate}
-          {...(a.type === 'free-text'
-            ? {
-                onEditText: () =>
-                  setTextBox({
-                    point: { x: a.data.x, y: a.data.y - a.data.fontSize },
-                    text: a.data.text,
-                    editId: a.id,
-                  }),
-              }
-            : {})}
-        />
-      ))}
-
-      {draftBox && activeTool === 'highlight' && (
-        <rect
-          x={Math.min(draftBox.from.x, draftBox.to.x) * width}
-          y={Math.min(draftBox.from.y, draftBox.to.y) * height}
-          width={Math.abs(draftBox.to.x - draftBox.from.x) * width}
-          height={Math.abs(draftBox.to.y - draftBox.from.y) * height}
-          fill={annotationStyle.highlightColor}
-          opacity={annotationStyle.highlightOpacity}
-        />
-      )}
-      {draftBox &&
-        isShapeTool(activeTool) &&
-        renderShapeGeometry(
-          activeTool,
-          draftBox.from,
-          draftBox.to,
-          annotationStyle.shapeColor,
-          annotationStyle.shapeThickness,
-          annotationStyle.shapeDashed,
-          annotationStyle.shapeFilled,
-          width,
-          height,
-          annotationStyle.shapeFillColor,
-          annotationStyle.shapeFillOpacity,
-          annotationStyle.shapeOpacity,
-        )}
-      {draftPath.length > 1 && (
-        <path
-          d={pointsToPath(draftPath, width, height)}
-          fill="none"
-          stroke={annotationStyle.inkColor}
-          strokeOpacity={annotationStyle.inkOpacity}
-          strokeWidth={annotationStyle.inkThickness * width}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={
-            annotationStyle.inkDashed
-              ? `${annotationStyle.inkThickness * width * 3} ${annotationStyle.inkThickness * width * 2}`
-              : undefined
-          }
-        />
-      )}
-      {textBox && (
-        <foreignObject
-          x={textBox.point.x * width}
-          y={textBox.point.y * height}
-          width={Math.max(180, width * 0.28)}
-          height={Math.max(80, height * 0.12)}
-        >
-          <textarea
-            autoFocus
-            className="dv-annotation-textbox"
-            value={textBox.text}
-            onChange={(event) =>
-              setTextBox({ ...textBox, text: event.target.value })
-            }
-            onPointerDown={(event) => event.stopPropagation()}
-            onBlur={() => {
-              const text = textBox.text.trim();
-              if (textBox.editId) {
-                const existing = annotations.find((a) => a.id === textBox.editId);
-                if (existing?.type === 'free-text') {
-                  updateAnnotation(textBox.editId, {
-                    data: { ...existing.data, text: text || existing.data.text },
-                  });
+      <g transform={rotationTransform(rotation, layerWidth, layerHeight)}>
+        {pageAnnotations.map((a) => (
+          <AnnotationShape
+            key={a.id}
+            annotation={a}
+            width={width}
+            height={height}
+            rotation={rotation}
+            selected={a.id === selectedId}
+            interactive={!isDrawingTool}
+            onSelect={() => selectAnnotation(a.id)}
+            onDelete={() => deleteAnnotation(a.id)}
+            onCommit={commitAnnotationUpdate}
+            {...(a.type === 'free-text'
+              ? {
+                  onEditText: () =>
+                    setTextBox({
+                      point: { x: a.data.x, y: a.data.y - a.data.fontSize },
+                      text: a.data.text,
+                      editId: a.id,
+                    }),
                 }
-              } else if (text) {
-                const ann: FreeTextAnnotation = {
-                  id: newId(),
-                  pageIndex,
-                  type: 'free-text',
-                  color: annotationStyle.textColor,
-                  opacity: annotationStyle.textOpacity,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                  data: {
-                    x: textBox.point.x,
-                    y: textBox.point.y + annotationStyle.textSize,
-                    text,
-                    fontSize: annotationStyle.textSize,
-                    fontWeight: annotationStyle.textBold ? 'bold' : 'normal',
-                    fontStyle: annotationStyle.textItalic ? 'italic' : 'normal',
-                    underline: annotationStyle.textUnderline,
-                    fontFamily: annotationStyle.textFontFamily,
-                    textAlign: annotationStyle.textAlign,
-                    ...(annotationStyle.textBackgroundEnabled
-                      ? { backgroundColor: annotationStyle.textBackground }
-                      : {}),
-                  },
-                };
-                addAnnotation(ann);
-              }
-              setTextBox(null);
-            }}
-            style={{
-              color: annotationStyle.textColor,
-              fontSize: `${annotationStyle.textSize * height}px`,
-              fontWeight: annotationStyle.textBold ? 'bold' : 'normal',
-              fontStyle: annotationStyle.textItalic ? 'italic' : 'normal',
-              fontFamily: annotationStyle.textFontFamily,
-              textAlign: annotationStyle.textAlign,
-              textDecoration: annotationStyle.textUnderline ? 'underline' : 'none',
-              background: annotationStyle.textBackgroundEnabled
-                ? annotationStyle.textBackground
-                : 'rgba(255, 255, 255, 0.92)',
-            }}
+              : {})}
           />
-        </foreignObject>
-      )}
+        ))}
+
+        {draftBox && activeTool === 'highlight' && (
+          <rect
+            x={Math.min(draftBox.from.x, draftBox.to.x) * width}
+            y={Math.min(draftBox.from.y, draftBox.to.y) * height}
+            width={Math.abs(draftBox.to.x - draftBox.from.x) * width}
+            height={Math.abs(draftBox.to.y - draftBox.from.y) * height}
+            fill={annotationStyle.highlightColor}
+            opacity={annotationStyle.highlightOpacity}
+          />
+        )}
+        {draftBox &&
+          isShapeTool(activeTool) &&
+          renderShapeGeometry(
+            activeTool,
+            draftBox.from,
+            draftBox.to,
+            annotationStyle.shapeColor,
+            annotationStyle.shapeThickness,
+            annotationStyle.shapeDashed,
+            annotationStyle.shapeFilled,
+            width,
+            height,
+            annotationStyle.shapeFillColor,
+            annotationStyle.shapeFillOpacity,
+            annotationStyle.shapeOpacity,
+          )}
+        {draftPath.length > 1 && (
+          <path
+            d={pointsToPath(draftPath, width, height)}
+            fill="none"
+            stroke={annotationStyle.inkColor}
+            strokeOpacity={annotationStyle.inkOpacity}
+            strokeWidth={annotationStyle.inkThickness * width}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={
+              annotationStyle.inkDashed
+                ? `${annotationStyle.inkThickness * width * 3} ${annotationStyle.inkThickness * width * 2}`
+                : undefined
+            }
+          />
+        )}
+        {textBox && (
+          <foreignObject
+            x={textBox.point.x * width}
+            y={textBox.point.y * height}
+            width={Math.max(180, width * 0.28)}
+            height={Math.max(80, height * 0.12)}
+          >
+            <textarea
+              autoFocus
+              className="dv-annotation-textbox"
+              value={textBox.text}
+              onChange={(event) =>
+                setTextBox({ ...textBox, text: event.target.value })
+              }
+              onPointerDown={(event) => event.stopPropagation()}
+              onBlur={() => {
+                const text = textBox.text.trim();
+                if (textBox.editId) {
+                  const existing = annotations.find((a) => a.id === textBox.editId);
+                  if (existing?.type === 'free-text') {
+                    updateAnnotation(textBox.editId, {
+                      data: { ...existing.data, text: text || existing.data.text },
+                    });
+                  }
+                } else if (text) {
+                  const ann: FreeTextAnnotation = {
+                    id: newId(),
+                    pageIndex,
+                    type: 'free-text',
+                    color: annotationStyle.textColor,
+                    opacity: annotationStyle.textOpacity,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                    data: {
+                      x: textBox.point.x,
+                      y: textBox.point.y + annotationStyle.textSize,
+                      text,
+                      fontSize: annotationStyle.textSize,
+                      fontWeight: annotationStyle.textBold ? 'bold' : 'normal',
+                      fontStyle: annotationStyle.textItalic ? 'italic' : 'normal',
+                      underline: annotationStyle.textUnderline,
+                      fontFamily: annotationStyle.textFontFamily,
+                      textAlign: annotationStyle.textAlign,
+                      ...(annotationStyle.textBackgroundEnabled
+                        ? { backgroundColor: annotationStyle.textBackground }
+                        : {}),
+                    },
+                  };
+                  addAnnotation(ann);
+                }
+                setTextBox(null);
+              }}
+              style={{
+                color: annotationStyle.textColor,
+                fontSize: `${annotationStyle.textSize * height}px`,
+                fontWeight: annotationStyle.textBold ? 'bold' : 'normal',
+                fontStyle: annotationStyle.textItalic ? 'italic' : 'normal',
+                fontFamily: annotationStyle.textFontFamily,
+                textAlign: annotationStyle.textAlign,
+                textDecoration: annotationStyle.textUnderline ? 'underline' : 'none',
+                background: annotationStyle.textBackgroundEnabled
+                  ? annotationStyle.textBackground
+                  : 'rgba(255, 255, 255, 0.92)',
+              }}
+            />
+          </foreignObject>
+        )}
+      </g>
     </svg>
   );
 }
@@ -689,6 +734,7 @@ function AnnotationShape({
   annotation,
   width,
   height,
+  rotation,
   selected,
   interactive,
   onSelect,
@@ -699,6 +745,7 @@ function AnnotationShape({
   annotation: Annotation;
   width: number;
   height: number;
+  rotation: Rotation;
   selected: boolean;
   interactive: boolean;
   onSelect: () => void;
@@ -728,10 +775,7 @@ function AnnotationShape({
     const svg = (e.currentTarget as SVGElement).ownerSVGElement;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
-    const start = {
-      x: clamp01((e.clientX - rect.left) / rect.width),
-      y: clamp01((e.clientY - rect.top) / rect.height),
-    };
+    const start = toPagePoint(e, rect, rotation);
     dragRef.current = {
       mode: 'move',
       start,
@@ -740,10 +784,7 @@ function AnnotationShape({
     };
     const move = (moveEvent: PointerEvent) => {
       if (!dragRef.current || dragRef.current.mode !== 'move') return;
-      const pt = {
-        x: clamp01((moveEvent.clientX - rect.left) / rect.width),
-        y: clamp01((moveEvent.clientY - rect.top) / rect.height),
-      };
+      const pt = toPagePoint(moveEvent, rect, rotation);
       const dx = pt.x - dragRef.current.start.x;
       const dy = pt.y - dragRef.current.start.y;
       onCommit(moveAnnotation(dragRef.current.origin, dx, dy));
@@ -768,20 +809,14 @@ function AnnotationShape({
     dragRef.current = {
       mode: 'resize',
       corner: dir,
-      start: {
-        x: clamp01((e.clientX - rect.left) / rect.width),
-        y: clamp01((e.clientY - rect.top) / rect.height),
-      },
+      start: toPagePoint(e, rect, rotation),
       origin: annotation,
       originBox: box,
     };
     const move = (moveEvent: PointerEvent) => {
       if (!dragRef.current || dragRef.current.mode !== 'resize' || !dragRef.current.corner)
         return;
-      const pt = {
-        x: clamp01((moveEvent.clientX - rect.left) / rect.width),
-        y: clamp01((moveEvent.clientY - rect.top) / rect.height),
-      };
+      const pt = toPagePoint(moveEvent, rect, rotation);
       const nextBox = applyResizeHandle(
         dragRef.current.originBox,
         dragRef.current.corner,
@@ -1001,15 +1036,21 @@ function AnnotationShape({
     };
     return map[c];
   };
+
+  const sideways = rotation === 90 || rotation === 270;
+  const diagA = sideways ? 'nesw-resize' : 'nwse-resize';
+  const diagB = sideways ? 'nwse-resize' : 'nesw-resize';
+  const vert = sideways ? 'ew-resize' : 'ns-resize';
+  const horiz = sideways ? 'ns-resize' : 'ew-resize';
   const cursorFor: Record<HandleDir, string> = {
-    nw: 'nwse-resize',
-    se: 'nwse-resize',
-    ne: 'nesw-resize',
-    sw: 'nesw-resize',
-    n: 'ns-resize',
-    s: 'ns-resize',
-    e: 'ew-resize',
-    w: 'ew-resize',
+    nw: diagA,
+    se: diagA,
+    ne: diagB,
+    sw: diagB,
+    n: vert,
+    s: vert,
+    e: horiz,
+    w: horiz,
   };
 
   return (

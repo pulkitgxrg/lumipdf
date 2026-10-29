@@ -144,6 +144,7 @@ export function PageRenderer({ pageIndex, renderZoom }: PageRendererProps) {
           pageIndex={pageIndex}
           width={scaledWidth}
           height={scaledHeight}
+          rotation={rotation}
         />
       )}
 
@@ -152,6 +153,7 @@ export function PageRenderer({ pageIndex, renderZoom }: PageRendererProps) {
           pageIndex={pageIndex}
           width={scaledWidth}
           height={scaledHeight}
+          rotation={rotation}
         />
       )}
 
@@ -160,6 +162,7 @@ export function PageRenderer({ pageIndex, renderZoom }: PageRendererProps) {
           pageIndex={pageIndex}
           width={scaledWidth}
           height={scaledHeight}
+          rotation={rotation}
         />
       )}
     </div>

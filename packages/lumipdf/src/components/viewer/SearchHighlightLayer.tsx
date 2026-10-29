@@ -5,12 +5,34 @@ export interface SearchHighlightLayerProps {
   pageIndex: number;
   width: number;
   height: number;
+  rotation?: 0 | 90 | 180 | 270;
+}
+
+interface NormalizedRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function rotateRect(r: NormalizedRect, rotation: 0 | 90 | 180 | 270): NormalizedRect {
+  switch (rotation) {
+    case 90:
+      return { x: 1 - r.y - r.height, y: r.x, width: r.height, height: r.width };
+    case 180:
+      return { x: 1 - r.x - r.width, y: 1 - r.y - r.height, width: r.width, height: r.height };
+    case 270:
+      return { x: r.y, y: 1 - r.x - r.width, width: r.height, height: r.width };
+    default:
+      return r;
+  }
 }
 
 export function SearchHighlightLayer({
   pageIndex,
   width,
   height,
+  rotation = 0,
 }: SearchHighlightLayerProps) {
   const [pageElement, setPageElement] = useState<HTMLElement | null>(null);
   const searchResult = useViewerStore((s) => s.searchResult);
@@ -94,7 +116,7 @@ export function SearchHighlightLayer({
         measureFrameRef.current = null;
       }
     };
-  }, [pageElement, pageIndex, searchResult, width, height]);
+  }, [pageElement, pageIndex, searchResult, width, height, rotation]);
 
   if (!searchResult || searchResult.matches.length === 0) return null;
 
@@ -110,6 +132,7 @@ export function SearchHighlightLayer({
       {pageMatches.map(({ globalIndex, match }) => {
         const isCurrent = globalIndex === currentMatchIndex;
         const measured = measuredRects[globalIndex];
+        const fallback = rotateRect(match, rotation);
         return (
           <div
             key={globalIndex}
@@ -121,10 +144,10 @@ export function SearchHighlightLayer({
             }
             data-match-current={isCurrent || undefined}
             style={{
-              left: `${measured?.left ?? match.x * width}px`,
-              top: `${measured?.top ?? match.y * height}px`,
-              width: `${Math.max(measured?.width ?? match.width * width, 2)}px`,
-              height: `${Math.max(measured?.height ?? match.height * height, 2)}px`,
+              left: `${measured?.left ?? fallback.x * width}px`,
+              top: `${measured?.top ?? fallback.y * height}px`,
+              width: `${Math.max(measured?.width ?? fallback.width * width, 2)}px`,
+              height: `${Math.max(measured?.height ?? fallback.height * height, 2)}px`,
             }}
           />
         );

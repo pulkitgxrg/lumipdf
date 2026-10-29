@@ -8,9 +8,35 @@ export interface TextLayerProps {
   width: number;
   /** Rendered page height in CSS px. */
   height: number;
+  rotation?: 0 | 90 | 180 | 270;
 }
 
-export function TextLayer({ pageIndex, width, height }: TextLayerProps) {
+function rotationTransform(
+  rotation: 0 | 90 | 180 | 270,
+  width: number,
+  height: number,
+): string | undefined {
+  switch (rotation) {
+    case 90:
+      return `translate(${width}px, 0) rotate(90deg)`;
+    case 180:
+      return `translate(${width}px, ${height}px) rotate(180deg)`;
+    case 270:
+      return `translate(0, ${height}px) rotate(270deg)`;
+    default:
+      return undefined;
+  }
+}
+
+export function TextLayer({
+  pageIndex,
+  width: layerWidth,
+  height: layerHeight,
+  rotation = 0,
+}: TextLayerProps) {
+  const isSideways = rotation === 90 || rotation === 270;
+  const width = isSideways ? layerHeight : layerWidth;
+  const height = isSideways ? layerWidth : layerHeight;
   const adapter = useViewerStore((s) => s.adapter);
   const [items, setItems] = useState<readonly TextLayerItem[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,7 +82,12 @@ export function TextLayer({ pageIndex, width, height }: TextLayerProps) {
     <div
       ref={containerRef}
       className="dv-text-layer"
-      style={{ width, height }}
+      style={{
+        width,
+        height,
+        transform: rotationTransform(rotation, layerWidth, layerHeight),
+        transformOrigin: '0 0',
+      }}
       aria-hidden="false"
     >
       {items.map((item, i) =>
