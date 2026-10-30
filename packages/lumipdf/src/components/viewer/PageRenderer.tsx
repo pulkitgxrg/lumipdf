@@ -10,6 +10,7 @@ import { useViewerStore } from "../../hooks/useDocumentViewer";
 import { TextLayer } from "./TextLayer";
 import { SearchHighlightLayer } from "./SearchHighlightLayer";
 import { AnnotationLayer } from "./AnnotationLayer";
+import { OcrRegionLayer } from "./OcrRegionLayer";
 
 export interface PageRendererProps {
   pageIndex: number;
@@ -22,6 +23,7 @@ export function PageRenderer({ pageIndex, renderZoom }: PageRendererProps) {
   const zoom = useViewerStore((s) => s.zoom);
   const rotation = useViewerStore((s) => s.rotation);
   const pageCache = useViewerStore((s) => s.pageCache);
+  const ocrRegionMode = useViewerStore((s) => s.ocrRegionMode);
 
   const targetRef = useRef<HTMLCanvasElement | HTMLDivElement | null>(null);
   const renderTokenRef = useRef(0);
@@ -164,6 +166,10 @@ export function PageRenderer({ pageIndex, renderZoom }: PageRendererProps) {
           height={scaledHeight}
           rotation={rotation}
         />
+      )}
+
+      {ocrRegionMode && isCanvasFormat && (
+        <OcrRegionLayer pageIndex={pageIndex} rotation={rotation} />
       )}
     </div>
   );

@@ -26,8 +26,10 @@ import type {
   SearchResult,
   SearchMatch,
   ParseOptions,
+  OcrRegion,
 } from '../core/types';
 import { ViewerError } from '../core/errors';
+import { findTextItemMatches } from '../core/text-match';
 import type { PdfMetadata } from './types';
 
 if (typeof window !== 'undefined') {
@@ -55,6 +57,7 @@ export const pdfManifest: AdapterManifest = {
     attachments: true,
     fullscreen: true,
     download: true,
+    ocr: true,
   },
   priority: 100,
   protocolVersion: 1,
@@ -172,6 +175,9 @@ export class PdfAdapter implements Adapter {
 
     try {
       const page: PDFPageProxy = await this.doc.getPage(ctx.page.index + 1);
+      if (ctx.signal.aborted) {
+        throw new DOMException('Render was cancelled.', 'AbortError');
+      }
       const viewport = page.getViewport({
         scale: ctx.scale * ctx.devicePixelRatio,
         rotation: ctx.rotation,
@@ -194,10 +200,17 @@ export class PdfAdapter implements Adapter {
 
         const c2d = target.getContext('2d');
         if (c2d) {
-          await page.render({
+          const task = page.render({
             canvasContext: c2d,
             viewport,
-          }).promise;
+          });
+          const onAbort = () => task.cancel();
+          ctx.signal.addEventListener('abort', onAbort, { once: true });
+          try {
+            await task.promise;
+          } finally {
+            ctx.signal.removeEventListener('abort', onAbort);
+          }
         }
       }
 
@@ -265,80 +278,57 @@ export class PdfAdapter implements Adapter {
     for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
       if (signal.aborted) break;
       const textLayer = await this.getTextLayer(pageIdx, signal);
-      for (const [itemIndex, item] of textLayer.items.entries()) {
-        const ranges = this.findMatchRanges(item.str, query);
-        if (ranges.length === 0) continue;
-
-        const safeLength = Math.max(item.str.length, 1);
-        for (const range of ranges) {
-          const startRatio = range.start / safeLength;
-          const endRatio = (range.start + range.length) / safeLength;
-          matches.push({
-            pageIndex: pageIdx,
-            text: item.str.slice(range.start, range.start + range.length),
-            textItemIndex: itemIndex,
-            textStart: range.start,
-            textEnd: range.start + range.length,
-            x: item.x + item.width * startRatio,
-            y: item.y,
-            width: Math.max(item.width * (endRatio - startRatio), 0.001),
-            height: item.height,
-          });
-        }
-      }
+      matches.push(...findTextItemMatches(pageIdx, textLayer.items, query));
     }
 
     return { query, matches, totalMatches: matches.length };
   }
 
-  private findMatchRanges(
-    text: string,
-    query: SearchQuery,
-  ): Array<{ start: number; length: number }> {
-    if (!text || !query.text.trim()) return [];
+  async rasterizePage(
+    pageIndex: number,
+    scale: number,
+    signal?: AbortSignal,
+    region?: OcrRegion,
+  ): Promise<HTMLCanvasElement> {
+    if (!this.doc) {
+      throw new ViewerError('RENDER_ERROR', 'PDF not parsed.');
+    }
 
-    if (query.regex) {
-      try {
-        const regex = new RegExp(query.text, query.caseSensitive ? 'g' : 'gi');
-        return Array.from(text.matchAll(regex))
-          .filter((match) => (match[0] ?? '').length > 0)
-          .map((match) => ({
-            start: match.index ?? 0,
-            length: (match[0] ?? '').length,
-          }));
-      } catch {
-        return [];
+    const page = await this.doc.getPage(pageIndex + 1);
+    try {
+      const base = page.getViewport({ scale });
+      const viewport = region
+        ? page.getViewport({
+            scale,
+            offsetX: -region.x * base.width,
+            offsetY: -region.y * base.height,
+          })
+        : base;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.ceil(region ? region.width * base.width : base.width));
+      canvas.height = Math.max(1, Math.ceil(region ? region.height * base.height : base.height));
+      const context = canvas.getContext('2d');
+      if (!context) {
+        throw new ViewerError('RENDER_ERROR', 'Canvas 2D context is unavailable.');
       }
-    }
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (query.wholeWord) {
+      const task = page.render({ canvasContext: context, viewport });
+      const onAbort = () => task.cancel();
+      signal?.addEventListener('abort', onAbort, { once: true });
       try {
-        const regex = new RegExp(
-          `\\b${escapeRegex(query.text)}\\b`,
-          query.caseSensitive ? 'g' : 'gi',
-        );
-        return Array.from(text.matchAll(regex))
-          .filter((match) => (match[0] ?? '').length > 0)
-          .map((match) => ({
-            start: match.index ?? 0,
-            length: (match[0] ?? '').length,
-          }));
-      } catch {
-        return [];
+        await task.promise;
+      } finally {
+        signal?.removeEventListener('abort', onAbort);
       }
+      return canvas;
+    } catch (cause) {
+      if (cause instanceof ViewerError) throw cause;
+      throw new ViewerError('RENDER_ERROR', 'Failed to render PDF page.', { cause });
+    } finally {
+      page.cleanup();
     }
-
-    const needle = query.caseSensitive ? query.text : query.text.toLowerCase();
-    const haystack = query.caseSensitive ? text : text.toLowerCase();
-    const ranges: Array<{ start: number; length: number }> = [];
-    let fromIndex = 0;
-    while (fromIndex <= haystack.length) {
-      const start = haystack.indexOf(needle, fromIndex);
-      if (start === -1) break;
-      ranges.push({ start, length: needle.length });
-      fromIndex = start + Math.max(needle.length, 1);
-    }
-    return ranges;
   }
 
   private async buildOutline(
@@ -424,8 +414,4 @@ async function destToPageIndex(
   } catch {
     return null;
   }
-}
-
-function escapeRegex(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

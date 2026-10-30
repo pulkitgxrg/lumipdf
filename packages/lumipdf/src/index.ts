@@ -37,6 +37,16 @@ export type {
   AnnotationTool,
   AnnotationChangeListener,
   AnnotationStyle,
+  OcrWord,
+  OcrLine,
+  OcrPageResult,
+  OcrStatus,
+  OcrStage,
+  OcrProgress,
+  OcrRequest,
+  OcrRegion,
+  OcrRegionResult,
+  OcrRunKind,
   Theme,
   SidebarView,
   FitMode,
@@ -62,6 +72,7 @@ export type {
   SearchSlice,
   AnnotationSlice,
   UiSlice,
+  OcrSlice,
   ToolbarDensity,
 } from "./core/store";
 
@@ -76,6 +87,14 @@ export type { CachedPage } from "./core/cache/page-cache";
 
 export { serializeAnnotations, parseAnnotations } from "./core/annotations";
 export type { SerializedAnnotations } from "./core/annotations";
+
+export {
+  OCR_LANGUAGES,
+  DEFAULT_OCR_LANGUAGE,
+  parsePageRange,
+  formatOcrText,
+  ocrTextLayerItems,
+} from "./core/ocr";
 
 export { PdfAdapter, pdfManifest } from "./adapter/PDFAdapter";
 export { registerBuiltInAdapters } from "./adapter/index";
@@ -94,6 +113,7 @@ export { useVirtualizer } from "./hooks/useVirtualizerHook";
 export { useFileInput } from "./hooks/useFileInput";
 export { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 export { useFocusTrap } from "./hooks/useFocusTrap";
+export { useOcr } from "./hooks/useOcr";
 
 export { useStrings, formatString, DEFAULT_STRINGS } from "./constants/strings";
 export type { ViewerStrings } from "./constants/strings";
@@ -107,6 +127,7 @@ export { SearchHighlightLayer } from "./components/viewer/SearchHighlightLayer";
 export { AnnotationLayer } from "./components/viewer/AnnotationLayer";
 export { Sidebar } from "./components/viewer/Sidebar";
 export { ThumbnailRenderer } from "./components/viewer/ThumbnailRenderer";
+export { OcrRegionLayer } from "./components/viewer/OcrRegionLayer";
 
 export {
   EmptyState,
@@ -118,6 +139,7 @@ export {
 export { PasswordDialog } from "./components/dialogs/PasswordDialog";
 export { PropertiesDialog } from "./components/dialogs/PropertiesDialog";
 export { ErrorDialog } from "./components/dialogs/ErrorDialog";
+export { OcrDialog } from "./components/dialogs/OcrDialog";
 export { Button } from "./components/common/Button";
 export { Icon } from "./components/common/Icon";
 export { Spinner } from "./components/common/Spinner";

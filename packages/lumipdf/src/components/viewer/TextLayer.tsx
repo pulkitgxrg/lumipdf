@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { TextLayerItem } from '../../core/types';
 import { useViewerStore } from '../../hooks/useDocumentViewer';
+import { ocrTextLayerItems } from '../../core/ocr';
 
 export interface TextLayerProps {
   pageIndex: number;
@@ -38,12 +39,20 @@ export function TextLayer({
   const width = isSideways ? layerHeight : layerWidth;
   const height = isSideways ? layerWidth : layerHeight;
   const adapter = useViewerStore((s) => s.adapter);
-  const [items, setItems] = useState<readonly TextLayerItem[]>([]);
+  const ocrResult = useViewerStore((s) => s.ocrResults[pageIndex]);
+  const [nativeItems, setNativeItems] = useState<readonly TextLayerItem[]>([]);
+  const items = useMemo(
+    () =>
+      ocrResult && !ocrResult.hasNativeText
+        ? ocrTextLayerItems(ocrResult)
+        : nativeItems,
+    [ocrResult, nativeItems],
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!adapter?.getTextLayer) {
-      setItems([]);
+      setNativeItems([]);
       return;
     }
     let cancelled = false;
@@ -51,10 +60,10 @@ export function TextLayer({
     adapter
       .getTextLayer(pageIndex, controller.signal)
       .then((layer) => {
-        if (!cancelled) setItems(layer.items);
+        if (!cancelled) setNativeItems(layer.items);
       })
       .catch(() => {
-        if (!cancelled) setItems([]);
+        if (!cancelled) setNativeItems([]);
       });
     return () => {
       cancelled = true;

@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -19,11 +20,16 @@ import { PageNavigator } from "./toolbar/PageNavigator";
 import { Sidebar } from "./viewer/Sidebar";
 import { PasswordDialog } from "./dialogs/PasswordDialog";
 import { PropertiesDialog } from "./dialogs/PropertiesDialog";
+import { OcrDialog } from "./dialogs/OcrDialog";
+import { sortOcrResults } from "../core/ocr";
+import { useStrings } from "../constants/strings";
 import type {
   FileSource,
   PdfViewerProps,
   PdfViewerRef,
   AnnotationTool,
+  OcrRequest,
+  OcrRegion,
 } from "../core/types";
 
 /** Stable identity for a FileSource so reloads only happen when content changes. */
@@ -58,6 +64,7 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
     onZoom,
     onSearchResult,
     onVisiblePagesChange,
+    onOcrComplete,
     theme,
     initialZoom,
     showToolbar = true,
@@ -78,6 +85,13 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
   const propertiesOpen = useViewerStore((s) => s.propertiesOpen);
   const sidebarOpen = useViewerStore((s) => s.sidebarOpen);
   const _pendingPassword = useViewerStore((s) => s._pendingPassword);
+  const ocrDialogOpen = useViewerStore((s) => s.ocrDialogOpen);
+  const ocrStatus = useViewerStore((s) => s.ocrStatus);
+  const ocrResults = useViewerStore((s) => s.ocrResults);
+  const ocrLastRun = useViewerStore((s) => s.ocrLastRun);
+  const ocrRegionMode = useViewerStore((s) => s.ocrRegionMode);
+  const activeTool = useViewerStore((s) => s.activeAnnotationTool);
+  const cursorMode = useViewerStore((s) => s.cursorMode);
 
   const goToPage = useViewerStore((s) => s.goToPage);
   const zoomIn = useViewerStore((s) => s.zoomIn);
@@ -105,6 +119,13 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
   const setTheme = useViewerStore((s) => s.setTheme);
   const setRootElement = useViewerStore((s) => s.setRootElement);
   const _setFullscreen = useViewerStore((s) => s._setFullscreen);
+  const runOcr = useViewerStore((s) => s.runOcr);
+  const cancelOcr = useViewerStore((s) => s.cancelOcr);
+  const setOcrDialogOpen = useViewerStore((s) => s.setOcrDialogOpen);
+  const resetOcr = useViewerStore((s) => s._resetOcr);
+  const runRegionOcr = useViewerStore((s) => s.runRegionOcr);
+  const setOcrRegionMode = useViewerStore((s) => s.setOcrRegionMode);
+  const strings = useStrings();
 
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -182,6 +203,40 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
     return onAnnotationChangeSub(onAnnotationChange);
   }, [onAnnotationChangeSub, onAnnotationChange]);
 
+  useEffect(() => () => resetOcr(), [resetOcr]);
+
+  const onOcrCompleteRef = useRef(onOcrComplete);
+  useEffect(() => {
+    onOcrCompleteRef.current = onOcrComplete;
+  }, [onOcrComplete]);
+
+  const latestOcrResults = useRef(ocrResults);
+  useEffect(() => {
+    latestOcrResults.current = ocrResults;
+  }, [ocrResults]);
+
+  const latestOcrRun = useRef(ocrLastRun);
+  useEffect(() => {
+    latestOcrRun.current = ocrLastRun;
+  }, [ocrLastRun]);
+
+  useEffect(() => {
+    if (ocrStatus === "done" && latestOcrRun.current === "pages") {
+      onOcrCompleteRef.current?.(sortOcrResults(latestOcrResults.current));
+    }
+  }, [ocrStatus]);
+
+  useEffect(() => {
+    if (activeTool !== null || cursorMode !== "select") {
+      setOcrRegionMode(false);
+    }
+  }, [activeTool, cursorMode, setOcrRegionMode]);
+
+  const closeOcrDialog = useCallback(
+    () => setOcrDialogOpen(false),
+    [setOcrDialogOpen],
+  );
+
   useKeyboardShortcuts(true);
 
   useImperativeHandle(
@@ -208,6 +263,15 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
       setAnnotations,
       clearAnnotations,
       setActiveTool: (tool: AnnotationTool | null) => setActiveTool(tool),
+      recognizeText: (request?: OcrRequest) => runOcr(request),
+      cancelOcr,
+      getOcrResults: () => sortOcrResults(ocrResults),
+      recognizeRegion: (
+        pageIndex: number,
+        region: OcrRegion,
+        language?: string,
+      ) => runRegionOcr(pageIndex, region, language),
+      selectOcrRegion: () => setOcrRegionMode(true),
     }),
     [
       goToPage,
@@ -229,6 +293,11 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
       setAnnotations,
       clearAnnotations,
       setActiveTool,
+      runOcr,
+      cancelOcr,
+      ocrResults,
+      runRegionOcr,
+      setOcrRegionMode,
     ],
   );
 
@@ -257,6 +326,18 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
         <div className="dv-main-stage">
           <ViewerContainer />
           {pdfDocument && <PageNavigator />}
+          {ocrRegionMode && pdfDocument && (
+            <div className="dv-ocr-region-hint" role="status">
+              <span>{strings.ocr.regionHint}</span>
+              <button
+                type="button"
+                className="dv-button dv-ocr-region-hint-cancel"
+                onClick={() => setOcrRegionMode(false)}
+              >
+                {strings.ocr.cancel}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -274,6 +355,10 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
           document={pdfDocument}
           onClose={() => setPropertiesOpen(false)}
         />
+      )}
+
+      {ocrDialogOpen && pdfDocument && (
+        <OcrDialog document={pdfDocument} onClose={closeOcrDialog} />
       )}
     </div>
   );

@@ -84,6 +84,10 @@ export function Toolbar({ features }: ToolbarProps) {
   const hasDocument = useViewerStore((s) => s.document !== null);
   const searchOpen = useViewerStore((s) => s.searchOpen);
   const setSearchOpen = useViewerStore((s) => s.setSearchOpen);
+  const setOcrDialogOpen = useViewerStore((s) => s.setOcrDialogOpen);
+  const ocrRunning = useViewerStore((s) => s.ocrStatus === 'running');
+  const ocrRegionMode = useViewerStore((s) => s.ocrRegionMode);
+  const setOcrRegionMode = useViewerStore((s) => s.setOcrRegionMode);
 
   const [searchText, setSearchText] = useState('');
   const [moreOpen, setMoreOpen] = useState(false);
@@ -324,6 +328,26 @@ export function Toolbar({ features }: ToolbarProps) {
             >
               <svg viewBox="0 0 16 16" fill="currentColor">
                 <path d="M6 1a5 5 0 1 0 3.09 8.95l4.48 4.49 1.42-1.42-4.49-4.48A5 5 0 0 0 6 1zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" />
+              </svg>
+            </button>
+          )}
+
+          {features?.ocr && (
+            <button
+              className="dv-tool-btn"
+              onClick={() => {
+                setOcrRegionMode(false);
+                setOcrDialogOpen(true);
+              }}
+              disabled={!hasDocument}
+              data-toggled={ocrRegionMode}
+              aria-label={strings.toolbar.ocr}
+              aria-busy={ocrRunning}
+              title={strings.toolbar.ocr}
+              data-busy={ocrRunning || undefined}
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M1 1h4v1.5H2.5V5H1V1zm10 0h4v4h-1.5V2.5H11V1zM1 11h1.5v2.5H5V15H1v-4zm12.5 0H15v4h-4v-1.5h2.5V11zM4.5 4.5h7V6h-7V4.5zm0 2.75h7v1.5h-7v-1.5zm0 2.75h4.5v1.5H4.5V10z" />
               </svg>
             </button>
           )}

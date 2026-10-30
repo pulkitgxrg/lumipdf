@@ -8,3 +8,4 @@ export { useVirtualizer } from './useVirtualizerHook';
 export { useFileInput } from './useFileInput';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export { useFocusTrap } from './useFocusTrap';
+export { useOcr } from './useOcr';

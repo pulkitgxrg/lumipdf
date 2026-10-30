@@ -14,6 +14,7 @@ import {
   type AnnotationSlice,
 } from './annotation';
 import { createUiSlice, type UiSlice } from './ui';
+import { createOcrSlice, type OcrSlice } from './ocr';
 
 export type { DocumentSlice, LoadState } from './document';
 export type { NavigationSlice } from './navigation';
@@ -21,13 +22,15 @@ export type { ViewportSlice } from './viewport';
 export type { SearchSlice, SearchState } from './search';
 export type { AnnotationSlice } from './annotation';
 export type { UiSlice, ToolbarDensity } from './ui';
+export type { OcrSlice } from './ocr';
 
 export type ViewerStore = DocumentSlice &
   NavigationSlice &
   ViewportSlice &
   SearchSlice &
   AnnotationSlice &
-  UiSlice;
+  UiSlice &
+  OcrSlice;
 
 const noopStorage = {
   getItem: () => null,
@@ -55,6 +58,7 @@ export const createViewerStore = (options?: CreateViewerStoreOptions) => {
             ...createSearchSlice(...a),
             ...createAnnotationSlice(...a),
             ...createUiSlice(...a),
+            ...createOcrSlice(...a),
           }),
           {
             name: persistKey,
@@ -69,6 +73,7 @@ export const createViewerStore = (options?: CreateViewerStoreOptions) => {
               toolbarDensity: state.toolbarDensity,
               locale: state.locale,
               recentFiles: state.recentFiles,
+              ocrLanguage: state.ocrLanguage,
             }),
           },
         ),

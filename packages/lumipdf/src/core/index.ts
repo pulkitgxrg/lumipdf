@@ -19,3 +19,11 @@ export type { ViewportSlice } from './store/viewport';
 export type { SearchSlice, SearchState } from './store/search';
 export type { AnnotationSlice } from './store/annotation';
 export type { UiSlice, ToolbarDensity } from './store/ui';
+export type { OcrSlice } from './store/ocr';
+export {
+  OCR_LANGUAGES,
+  DEFAULT_OCR_LANGUAGE,
+  parsePageRange,
+  formatOcrText,
+  ocrTextLayerItems,
+} from './ocr';

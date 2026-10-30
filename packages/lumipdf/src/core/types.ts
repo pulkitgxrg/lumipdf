@@ -112,6 +112,12 @@ export interface Adapter {
   renderPage?(context: RenderContext): Promise<RenderResult>;
   getTextLayer?(pageIndex: number, signal?: AbortSignal): Promise<TextLayer>;
   search?(query: SearchQuery, signal: AbortSignal): Promise<SearchResult>;
+  rasterizePage?(
+    pageIndex: number,
+    scale: number,
+    signal?: AbortSignal,
+    region?: OcrRegion,
+  ): Promise<HTMLCanvasElement>;
   exportDocument?(format: 'original' | 'pdf'): Promise<Blob>;
   dispose?(): void;
 }
@@ -269,6 +275,71 @@ export interface FreeTextAnnotation extends BaseAnnotation<'free-text'> {
   };
 }
 
+export interface OcrWord {
+  readonly text: string;
+  readonly confidence: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface OcrLine {
+  readonly text: string;
+  readonly confidence: number;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly words: ReadonlyArray<OcrWord>;
+}
+
+export interface OcrPageResult {
+  readonly pageIndex: number;
+  readonly language: string;
+  readonly text: string;
+  readonly confidence: number;
+  readonly lines: ReadonlyArray<OcrLine>;
+  readonly hasNativeText: boolean;
+  readonly recognizedAt: number;
+}
+
+export interface OcrRegion {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface OcrRegionResult {
+  readonly pageIndex: number;
+  readonly region: OcrRegion;
+  readonly language: string;
+  readonly text: string;
+  readonly confidence: number;
+  readonly lines: ReadonlyArray<OcrLine>;
+  readonly recognizedAt: number;
+}
+
+export type OcrRunKind = 'pages' | 'region';
+
+export type OcrStatus = 'idle' | 'running' | 'done' | 'cancelled' | 'error';
+
+export type OcrStage = 'rendering' | 'loading' | 'recognizing';
+
+export interface OcrProgress {
+  readonly stage: OcrStage;
+  readonly pageIndex: number;
+  readonly completedPages: number;
+  readonly totalPages: number;
+  readonly pageProgress: number;
+}
+
+export interface OcrRequest {
+  readonly pages?: ReadonlyArray<number>;
+  readonly language?: string;
+}
+
 export interface AnnotationStyle {
   readonly highlightColor: string;
   readonly highlightOpacity: number;
@@ -338,6 +409,7 @@ export interface PdfViewerProps {
   onSearchResult?: (result: SearchResult | null) => void;
   onVisiblePagesChange?: (pages: number[]) => void;
   onSelectionChange?: (selection: DocViewerSelection) => void;
+  onOcrComplete?: (results: OcrPageResult[]) => void;
 
   theme?: Theme;
   initialZoom?: number;
@@ -366,4 +438,13 @@ export interface PdfViewerRef {
   setAnnotations: (annotations: Annotation[]) => void;
   clearAnnotations: () => void;
   setActiveTool: (tool: AnnotationTool | null) => void;
+  recognizeText: (request?: OcrRequest) => Promise<OcrPageResult[]>;
+  cancelOcr: () => void;
+  getOcrResults: () => OcrPageResult[];
+  recognizeRegion: (
+    pageIndex: number,
+    region: OcrRegion,
+    language?: string,
+  ) => Promise<OcrRegionResult | null>;
+  selectOcrRegion: () => void;
 }

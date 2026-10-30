@@ -11,6 +11,7 @@ import type { NavigationSlice } from './navigation';
 import type { ViewportSlice } from './viewport';
 import type { SearchSlice } from './search';
 import type { AnnotationSlice } from './annotation';
+import type { OcrSlice } from './ocr';
 import { normalizeFileSource } from '../file-source';
 import { PageCache } from '../cache/page-cache';
 
@@ -63,7 +64,12 @@ export interface DocumentSlice {
 }
 
 export const createDocumentSlice: StateCreator<
-  DocumentSlice & NavigationSlice & ViewportSlice & SearchSlice & AnnotationSlice,
+  DocumentSlice &
+    NavigationSlice &
+    ViewportSlice &
+    SearchSlice &
+    AnnotationSlice &
+    OcrSlice,
   [],
   [],
   DocumentSlice
@@ -83,6 +89,7 @@ export const createDocumentSlice: StateCreator<
     get().adapter?.dispose?.();
     get()._pendingPassword?.adapter.dispose?.();
     get().pageCache.clear();
+    get()._resetOcr();
     const controller = new AbortController();
 
     const registry = get().registry;
@@ -151,6 +158,7 @@ export const createDocumentSlice: StateCreator<
       if (controller.signal.aborted) return;
 
       get()._resetAnnotations();
+      get()._resetOcr();
       set({
         document: model,
         adapter,
@@ -216,6 +224,7 @@ export const createDocumentSlice: StateCreator<
     pageCache.clear();
 
     get()._resetAnnotations();
+    get()._resetOcr();
     set({
       document: null,
       adapter: null,

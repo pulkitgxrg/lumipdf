@@ -8,7 +8,8 @@ export type ViewerErrorCode =
   | 'CORRUPT_FILE'
   | 'MEMORY_LIMIT'
   | 'WORKER_ERROR'
-  | 'INVALID_SOURCE';
+  | 'INVALID_SOURCE'
+  | 'OCR_ERROR';
 
 export interface ViewerErrorOptions {
   cause?: unknown;

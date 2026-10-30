@@ -14,6 +14,7 @@ export function useKeyboardShortcuts(enabled: boolean = true) {
   const selectAnnotation = useViewerStore((s) => s.selectAnnotation);
   const deleteAnnotation = useViewerStore((s) => s.deleteAnnotation);
   const setActiveTool = useViewerStore((s) => s.setActiveTool);
+  const setOcrRegionMode = useViewerStore((s) => s.setOcrRegionMode);
   const rootElement = useViewerStore((s) => s._rootElement);
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useKeyboardShortcuts(enabled: boolean = true) {
         setSearchOpen(false);
         selectAnnotation(null);
         setActiveTool(null);
+        setOcrRegionMode(false);
         return;
       }
 
@@ -117,5 +119,6 @@ export function useKeyboardShortcuts(enabled: boolean = true) {
     selectAnnotation,
     deleteAnnotation,
     setActiveTool,
+    setOcrRegionMode,
   ]);
 }

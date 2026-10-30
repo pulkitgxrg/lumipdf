@@ -2,6 +2,8 @@ import type { StateCreator } from 'zustand';
 import type { SearchMatch, SearchQuery, SearchResult } from '../types';
 import type { DocumentSlice } from './document';
 import type { NavigationSlice } from './navigation';
+import type { OcrSlice } from './ocr';
+import { searchOcrResults } from '../ocr';
 
 export type SearchState = 'idle' | 'searching' | 'done' | 'error';
 
@@ -24,7 +26,7 @@ export interface SearchSlice {
 }
 
 export const createSearchSlice: StateCreator<
-  SearchSlice & DocumentSlice & NavigationSlice,
+  SearchSlice & DocumentSlice & NavigationSlice & OcrSlice,
   [],
   [],
   SearchSlice
@@ -66,8 +68,13 @@ export const createSearchSlice: StateCreator<
 
     adapter!
       .search!(query, controller.signal)
-      .then((result) => {
+      .then((nativeResult) => {
         if (controller.signal.aborted) return;
+        const ocrMatches = searchOcrResults(get().ocrResults, query);
+        const matches = [...nativeResult.matches, ...ocrMatches].sort(
+          (a, b) => a.pageIndex - b.pageIndex,
+        );
+        const result = { query, matches, totalMatches: matches.length };
         set({
           searchResult: result,
           searchState: 'done',
