@@ -2,6 +2,42 @@
 
 All notable changes to **lumipdf** are documented in this file.
 
+## [1.2.0] - 2026-10-30
+
+Feature release adding in-browser OCR: extract text from scanned pages, whole documents or a selected area.
+
+### Features
+
+- **OCR (text recognition)** — new toolbar button opens a *Recognize Text* dialog. Recognize the current page, all pages, a custom range (`1-3, 5`) or a **selected area**, in 20 languages. Runs entirely in the browser with [tesseract.js](https://github.com/naptha/tesseract.js); language data is downloaded once on first use and cached
+- **Copy or download** extracted text as `.txt`, with per-page sections and an average confidence score
+- **Scanned pages become selectable and searchable** — after OCR, recognized text is overlaid on pages that have no native text, so it can be selected, copied and found with search (matches are highlighted in place). Pages that already contain text are left untouched
+- **Area selection** — drag a box on any page (including rotated pages) to recognize just that region; Esc or *Cancel* exits selection mode
+- Progress bar with per-page status, cancellation, and *Clear results*
+- Low-confidence noise (e.g. speckles on poor scans) is filtered out of results
+
+### Fixes
+
+- **Rotated pages render at the correct size** — rotating could leave the page image drawn smaller than its frame because a stale render was never cancelled, which also misaligned text selection, search highlights and annotations
+- **Dialogs keep keyboard focus** — focus now moves into the Properties, Password and other dialogs and Escape closes them, including under React Strict Mode
+
+### API
+
+- `PdfViewerRef`: `recognizeText(request?)`, `recognizeRegion(pageIndex, region, language?)`, `selectOcrRegion()`, `cancelOcr()`, `getOcrResults()`
+- `PdfViewerProps`: `onOcrComplete?(results)`
+- New `useOcr()` hook, `OcrDialog` and `OcrRegionLayer` components, and helpers `OCR_LANGUAGES`, `DEFAULT_OCR_LANGUAGE`, `parsePageRange`, `formatOcrText`, `ocrTextLayerItems`
+- New types: `OcrPageResult`, `OcrRegion`, `OcrRegionResult`, `OcrLine`, `OcrWord`, `OcrRequest`, `OcrProgress`, `OcrStatus`, `OcrStage`, `OcrRunKind`; new error code `OCR_ERROR`
+- `Adapter` gains optional `rasterizePage(pageIndex, scale, signal?, region?)`; `PdfAdapter` implements it and advertises the `ocr` feature
+
+### Upgrade notes
+
+```bash
+npm install lumipdf@1.2.0
+```
+
+No breaking API changes. `tesseract.js` is a new dependency and is loaded lazily, so it adds nothing to the initial bundle until OCR is used. OCR fetches its worker, engine and language data from the jsDelivr CDN by default, so allow it in your Content Security Policy if you use one.
+
+---
+
 ## [1.1.1] - 2026-10-29
 
 Patch release fixing overlays on rotated pages.
