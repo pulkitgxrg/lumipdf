@@ -9,7 +9,7 @@
  * ============================================================ */
 
 import * as pdfjsLib from 'pdfjs-dist';
-import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
+import type { PDFDocumentProxy, PDFPageProxy, PageViewport } from 'pdfjs-dist';
 import type {
   Adapter,
   AdapterManifest,
@@ -35,6 +35,12 @@ import type { PdfMetadata } from './types';
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 }
+
+function renderParams(context: CanvasRenderingContext2D, viewport: PageViewport): Parameters<PDFPageProxy['render']>[0] {
+  return { canvasContext: context, canvas: context.canvas, viewport } as unknown as Parameters<PDFPageProxy['render']>[0];
+}
+
+const destroyDoc = (doc: PDFDocumentProxy) => doc.loadingTask.destroy().catch(() => {});
 
 const CMAP_URL = '/pdfjs/cmaps/';
 const STANDARD_FONT_DATA_URL = '/pdfjs/standard_fonts/';
@@ -110,7 +116,7 @@ export class PdfAdapter implements Adapter {
       }
 
       if (signal.aborted) {
-        await doc.destroy().catch(() => {});
+        await destroyDoc(doc);
         throw new Error('Parse cancelled');
       }
 
@@ -200,10 +206,7 @@ export class PdfAdapter implements Adapter {
 
         const c2d = target.getContext('2d');
         if (c2d) {
-          const task = page.render({
-            canvasContext: c2d,
-            viewport,
-          });
+          const task = page.render(renderParams(c2d, viewport));
           const onAbort = () => task.cancel();
           ctx.signal.addEventListener('abort', onAbort, { once: true });
           try {
@@ -314,7 +317,7 @@ export class PdfAdapter implements Adapter {
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      const task = page.render({ canvasContext: context, viewport });
+      const task = page.render(renderParams(context, viewport));
       const onAbort = () => task.cancel();
       signal?.addEventListener('abort', onAbort, { once: true });
       try {
@@ -391,7 +394,7 @@ export class PdfAdapter implements Adapter {
   }
 
   dispose(): void {
-    this.doc?.destroy().catch(() => {});
+    if (this.doc) void destroyDoc(this.doc);
     this.doc = null;
     this.originalBuffer = null;
   }

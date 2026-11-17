@@ -15,6 +15,8 @@
   --dv-button-primary-bg: #5f8a2e;
   --dv-button-primary-hover: #527826;
   --dv-button-primary-text: #ffffff;
+  --dv-control-bg: #f7f8f4;
+  --dv-control-hover-bg: #ffffff;
 
   --dv-shadow: 0 1px 2px rgba(26, 29, 36, 0.05), 0 1px 3px rgba(26, 29, 36, 0.04);
   --dv-shadow-lg: 0 8px 24px -8px rgba(26, 29, 36, 0.14), 0 2px 8px rgba(26, 29, 36, 0.04);
@@ -40,6 +42,8 @@
   --dv-button-primary-bg: #6f9c3b;
   --dv-button-primary-hover: #5f8a2e;
   --dv-button-primary-text: #ffffff;
+  --dv-control-bg: #1a1d22;
+  --dv-control-hover-bg: #22262c;
 
   --dv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
   --dv-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
@@ -124,7 +128,7 @@
   padding: 4px;
   border: 1px solid var(--dv-border);
   border-radius: 12px;
-  background: #f7f8f4;
+  background: var(--dv-control-bg);
 }
 
 .dv-tool-btn {
@@ -353,7 +357,7 @@
   padding: 6px 10px;
   border-radius: 9px;
   border: 1px solid var(--dv-border);
-  background-color: #f7f8f4;
+  background-color: var(--dv-control-bg);
   color: var(--dv-text);
   font-family: var(--dv-font-sans);
   font-size: 12px;
@@ -364,7 +368,7 @@
 }
 
 .dv-zoom-select:hover {
-  background: #ffffff;
+  background: var(--dv-control-hover-bg);
 }
 
 .dv-zoom-select:focus {
