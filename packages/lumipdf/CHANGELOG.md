@@ -2,6 +2,22 @@
 
 All notable changes to **lumipdf** are documented in this file.
 
+## [1.3.0] - 2026-11-20
+
+Packaging release: lumipdf now ships compiled JavaScript and works with any bundler, without extra configuration.
+
+### Packaging
+
+- **Ships built ESM instead of raw TypeScript.** `exports` now points at `dist/index.js`, `dist/index.d.ts` and `dist/styles/index.css`, built with tsup. It works in webpack, Next.js (no `transpilePackages` needed), Vite, Jest and plain Node ESM
+- **Next.js App Router:** the bundle is marked `"use client"`, so `DocumentViewer` can be imported directly from a Server Component
+- The published tarball only contains `dist/`, `README.md`, `LICENSE` and `package.json`; `sideEffects` is limited to CSS for better tree-shaking
+- `vite` is no longer a runtime dependency, so consumers stop downloading it
+- `pdfjs-dist` is now a **required** peer dependency (it was marked optional, but the viewer cannot render without it). Supported range: `^4.7 || ^5 || ^6`
+
+### Fixes
+
+- The default PDF.js worker (jsDelivr) no longer overwrites a `GlobalWorkerOptions.workerSrc` / `workerPort` that the host app already set
+
 ## [1.2.0] - 2026-10-30
 
 Feature release adding in-browser OCR: extract text from scanned pages, whole documents or a selected area.

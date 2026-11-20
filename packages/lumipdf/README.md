@@ -8,7 +8,13 @@ React PDF viewer built on PDF.js. Virtualized rendering, full-text search, thumb
 npm install lumipdf
 ```
 
-Peer dependencies: `react`, `react-dom`, and `pdfjs-dist`.
+Peer dependencies: `react` (18+), `react-dom`, and `pdfjs-dist` (`^4.7 || ^5 || ^6`). Install them if your app doesn't already have them:
+
+```bash
+npm install react react-dom pdfjs-dist
+```
+
+lumipdf ships compiled ESM, so it works with Vite, webpack, Next.js (no `transpilePackages` needed) and other bundlers. With the Next.js App Router you can render `DocumentViewer` straight from a Server Component, because the package is marked `"use client"`.
 
 ```tsx
 import { DocumentViewer } from "lumipdf";
@@ -90,9 +96,29 @@ Compose your own chrome if you do not want the default toolbar:
 - `useDocument`, `useNavigation`, `useZoom`, `useSearch`, `useAnnotations`
 - `useFileInput`, `useKeyboardShortcuts`, `useVirtualizer`
 
+## PDF.js worker
+
+By default the PDF.js worker loads from jsDelivr, using the version that matches your installed `pdfjs-dist`. To self-host it (offline use, strict CSP), set `GlobalWorkerOptions.workerSrc` before the first document loads. lumipdf won't overwrite a value you have already set.
+
+```ts
+import { GlobalWorkerOptions } from "pdfjs-dist";
+
+// Vite / webpack 5 / Next.js: let the bundler emit the worker file
+GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
+
+// ...or point at a copy you serve yourself
+// GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+```
+
+## OCR
+
+OCR uses [tesseract.js](https://github.com/naptha/tesseract.js). It is loaded with a dynamic `import()` the first time OCR runs, so it sits in its own chunk and isn't part of your initial bundle.
+
 ## Notes
 
-- PDF.js worker loads from jsDelivr by default. Set `pdfjsLib.GlobalWorkerOptions.workerSrc` before render if you need self-hosted worker assets.
 - Remote PDFs need CORS access.
 - Supports React 18+.
 

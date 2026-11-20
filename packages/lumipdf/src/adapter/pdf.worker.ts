@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 /* ============================================================
  * It runs in Web Worker via Comlink
  * Handles PDF.js parsing and page rendering off main thread.

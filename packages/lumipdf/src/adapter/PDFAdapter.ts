@@ -32,7 +32,11 @@ import { ViewerError } from '../core/errors';
 import { findTextItemMatches } from '../core/text-match';
 import type { PdfMetadata } from './types';
 
-if (typeof window !== 'undefined') {
+if (
+  typeof window !== 'undefined' &&
+  !pdfjsLib.GlobalWorkerOptions.workerSrc &&
+  !pdfjsLib.GlobalWorkerOptions.workerPort
+) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 }
 
