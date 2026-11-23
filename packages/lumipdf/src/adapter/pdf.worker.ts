@@ -149,9 +149,10 @@ const api: PdfWorkerAPI = {
     const ctx = canvas.getContext('2d')!;
 
     await page.render({
-      canvasContext: ctx as unknown as CanvasRenderingContext2D,
+      canvasContext: ctx,
+      canvas,
       viewport,
-    }).promise;
+    } as unknown as Parameters<typeof page.render>[0]).promise;
 
     return canvas.transferToImageBitmap();
   },

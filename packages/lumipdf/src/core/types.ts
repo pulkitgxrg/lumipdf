@@ -1,3 +1,5 @@
+import type { ViewerColors } from './theme';
+
 export type FileSource =
   | { kind: 'file'; file: File }
   | { kind: 'handle'; handle: FileSystemFileHandle }
@@ -386,6 +388,7 @@ export type AnnotationTool =
 export type AnnotationChangeListener = (annotations: Annotation[]) => void;
 
 export type Theme = 'light' | 'dark' | 'auto' | 'sepia';
+export type { ViewerColors } from './theme';
 export type SidebarView = 'thumbnails' | 'outline' | 'attachments';
 export type FitMode = 'actual-size' | 'page-fit' | 'page-width' | 'custom';
 export type ScrollMode = 'page' | 'vertical' | 'horizontal' | 'wrapped';
@@ -412,6 +415,7 @@ export interface PdfViewerProps {
   onOcrComplete?: (results: OcrPageResult[]) => void;
 
   theme?: Theme;
+  colors?: ViewerColors;
   initialZoom?: number;
   showToolbar?: boolean;
   showSidebar?: boolean;

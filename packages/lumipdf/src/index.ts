@@ -56,7 +56,10 @@ export type {
   DocViewerSelection,
   PdfViewerProps,
   PdfViewerRef,
+  ViewerColors,
 } from "./core/types";
+
+export { colorsToCssVars } from "./core/theme";
 
 export { ViewerError, isViewerError } from "./core/errors";
 export type { ViewerErrorCode } from "./core/errors";

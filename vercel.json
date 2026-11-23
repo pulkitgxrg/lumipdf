@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/playground && bun run build",
+  "buildCommand": "bunx turbo run build --filter=playground",
   "outputDirectory": "apps/playground/.next",
   "installCommand": "bun install",
   "framework": "nextjs"

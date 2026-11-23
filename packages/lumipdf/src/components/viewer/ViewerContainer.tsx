@@ -18,6 +18,21 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
 const clampZoom = (z: number) => Math.max(MIN_ZOOM, Math.min(z, MAX_ZOOM));
 
+const RENDER_SETTLE_MS = 140;
+
+interface ZoomAnchor {
+  ratio: number;
+  x: number;
+  y: number;
+  cx: number;
+  cy: number;
+  pageIndex?: number;
+  pageX?: number;
+  pageY?: number;
+  pinTop?: boolean;
+  pinLeft?: boolean;
+}
+
 export function ViewerContainer() {
   const document = useViewerStore((s) => s.document);
   const loadState = useViewerStore((s) => s.loadState);
@@ -46,7 +61,6 @@ export function ViewerContainer() {
 
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
-  const pinchZoomRef = useRef<number | null>(null);
   const [renderZoom, setRenderZoom] = useState(zoom);
 
   const gesture = useRef<{
@@ -59,16 +73,42 @@ export function ViewerContainer() {
   } | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const scaleFrame = useRef<number | undefined>(undefined);
-  const pendingAnchor = useRef<{
-    ratio: number;
-    x: number;
-    y: number;
-    cx: number;
-    cy: number;
-    pageIndex?: number;
-    pageX?: number;
-    pageY?: number;
-  } | null>(null);
+  const pendingAnchor = useRef<ZoomAnchor | null>(null);
+
+  const captureAnchor = useCallback((cx: number, cy: number, ratio: number): ZoomAnchor | null => {
+    const el = scrollRef.current;
+    if (!el) return null;
+    const viewerRect = el.getBoundingClientRect();
+    const px = viewerRect.left + cx;
+    const py = viewerRect.top + cy;
+    let page = window.document.elementFromPoint(px, py)?.closest<HTMLElement>('.dv-page') ?? null;
+    if (!page || !el.contains(page)) {
+      page = null;
+      let best = Infinity;
+      el.querySelectorAll<HTMLElement>('.dv-page').forEach((candidate) => {
+        const r = candidate.getBoundingClientRect();
+        const dx = Math.max(r.left - px, 0, px - r.right);
+        const dy = Math.max(r.top - py, 0, py - r.bottom);
+        const d = dx * dx + dy * dy;
+        if (d < best) {
+          best = d;
+          page = candidate;
+        }
+      });
+    }
+    const anchor: ZoomAnchor = { ratio, x: el.scrollLeft + cx, y: el.scrollTop + cy, cx, cy };
+    const pageEl = page as HTMLElement | null;
+    if (pageEl) {
+      const r = pageEl.getBoundingClientRect();
+      const index = Number(pageEl.dataset.pageIndex);
+      if (Number.isInteger(index) && r.width > 0 && r.height > 0) {
+        anchor.pageIndex = index;
+        anchor.pageX = (px - r.left) / r.width;
+        anchor.pageY = (py - r.top) / r.height;
+      }
+    }
+    return anchor;
+  }, []);
 
   const applyLiveScale = useCallback(() => {
     if (scaleFrame.current !== undefined) return;
@@ -100,67 +140,38 @@ export function ViewerContainer() {
       }
       return;
     }
-    const el = scrollRef.current;
-    const viewerRect = el?.getBoundingClientRect();
-    const pageElement = viewerRect
-      ? window.document
-          .elementFromPoint(viewerRect.left + g.cursorX, viewerRect.top + g.cursorY)
-          ?.closest<HTMLElement>('.dv-page')
-      : null;
-    const pageRect = pageElement?.getBoundingClientRect();
 
-    pendingAnchor.current = {
-      ratio: next / g.base,
-      x: g.originX,
-      y: g.originY,
-      cx: g.cursorX,
-      cy: g.cursorY,
-      ...(pageElement && pageRect
-        ? {
-            pageIndex: Number(pageElement.dataset.pageIndex),
-            pageX: (viewerRect!.left + g.cursorX - pageRect.left) / pageRect.width,
-            pageY: (viewerRect!.top + g.cursorY - pageRect.top) / pageRect.height,
-          }
-        : {}),
-    };
+    const anchor = captureAnchor(g.cursorX, g.cursorY, next / g.base);
+    if (anchor) {
+      anchor.x = g.originX;
+      anchor.y = g.originY;
+    }
+    pendingAnchor.current = anchor;
     isProgrammaticScroll.current = true;
-    pinchZoomRef.current = next;
     setZoom(next);
-  }, [setZoom]);
+  }, [setZoom, captureAnchor]);
+
+  const anchoredZoom = useRef(zoom);
+  if (anchoredZoom.current !== zoom) {
+    const prev = anchoredZoom.current;
+    anchoredZoom.current = zoom;
+    const el = scrollRef.current;
+    if (!pendingAnchor.current && el && prev > 0) {
+      const anchor = captureAnchor(el.clientWidth / 2, el.clientHeight / 2, zoom / prev);
+      if (anchor) {
+        anchor.pinTop = el.scrollTop <= 0 && (fitMode !== 'custom' || el.scrollHeight > el.clientHeight);
+        anchor.pinLeft = el.scrollWidth > el.clientWidth && el.scrollLeft <= 0;
+        isProgrammaticScroll.current = true;
+      }
+      pendingAnchor.current = anchor;
+    }
+  }
 
   useEffect(() => {
-    if (pinchZoomRef.current !== null && Math.abs(pinchZoomRef.current - zoom) < 1e-4) {
-      pinchZoomRef.current = null;
-      return;
-    }
-    setRenderZoom(zoom);
-  }, [zoom]);
-
-  useLayoutEffect(() => {
-    const anchor = pendingAnchor.current;
-    if (!anchor) return;
-    pendingAnchor.current = null;
-    const content = contentRef.current;
-    if (content) {
-      content.style.transform = '';
-      content.style.transformOrigin = '';
-    }
-    const el = scrollRef.current;
-    if (el) {
-      const page = Number.isInteger(anchor.pageIndex)
-        ? content?.querySelector<HTMLElement>(`.dv-page[data-page-index="${anchor.pageIndex}"]`)
-        : null;
-      if (page && anchor.pageX !== undefined && anchor.pageY !== undefined) {
-        const viewerRect = el.getBoundingClientRect();
-        const pageRect = page.getBoundingClientRect();
-        el.scrollLeft += pageRect.left - viewerRect.left + pageRect.width * anchor.pageX - anchor.cx;
-        el.scrollTop += pageRect.top - viewerRect.top + pageRect.height * anchor.pageY - anchor.cy;
-      } else {
-        el.scrollLeft = anchor.x * anchor.ratio - anchor.cx;
-        el.scrollTop = anchor.y * anchor.ratio - anchor.cy;
-      }
-    }
-  }, [zoom]);
+    if (Math.abs(renderZoom - zoom) < 1e-4) return;
+    const t = setTimeout(() => setRenderZoom(zoom), RENDER_SETTLE_MS);
+    return () => clearTimeout(t);
+  }, [zoom, renderZoom]);
 
   const isHorizontal = scrollMode === 'horizontal';
   const pageCount = document?.pages.length ?? 0;
@@ -200,8 +211,14 @@ export function ViewerContainer() {
     }, 0);
   }, [document, isHorizontal, rotation, rows, zoom]);
 
+  const getItemKey = useCallback(
+    (index: number) => `${index}:${zoom}:${rotation}:${spreadMode}`,
+    [zoom, rotation, spreadMode],
+  );
+
   const virtualizer = useVirtualizer({
     count: rows.length,
+    getItemKey,
     getScrollElement: () => scrollRef.current,
     estimateSize: (rowIndex) => {
       const isLastRow = rowIndex === rows.length - 1;
@@ -229,6 +246,61 @@ export function ViewerContainer() {
       return size + (hasGap ? PAGE_VERTICAL_GAP : 0);
     },
   });
+
+  useLayoutEffect(() => {
+    const anchor = pendingAnchor.current;
+    if (!anchor) return;
+    pendingAnchor.current = null;
+    const content = contentRef.current;
+    if (content) {
+      content.style.transform = '';
+      content.style.transformOrigin = '';
+    }
+    const el = scrollRef.current;
+    if (!el || !content) return;
+
+    const row = anchor.pageIndex !== undefined ? pageToRow[anchor.pageIndex] : undefined;
+    const item = row !== undefined ? virtualizer.measurementsCache[row] : undefined;
+    const rowPages = row !== undefined ? rows[row] : undefined;
+    if (document && item && rowPages && anchor.pageX !== undefined && anchor.pageY !== undefined) {
+      const isSideways = rotation === 90 || rotation === 270;
+      const sizeOf = (p: number) => {
+        const page = document.pages[p];
+        if (!page) return { w: 0, h: 0 };
+        return {
+          w: (isSideways ? page.height : page.width) * zoom,
+          h: (isSideways ? page.width : page.height) * zoom,
+        };
+      };
+      const viewerRect = el.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      const originX = contentRect.left - viewerRect.left + el.scrollLeft;
+      const originY = contentRect.top - viewerRect.top + el.scrollTop;
+      const { w, h } = sizeOf(anchor.pageIndex!);
+      let left: number;
+      let top: number;
+      if (isHorizontal) {
+        left = originX + item.start;
+        top = originY;
+      } else {
+        let rowWidth = 0;
+        let offset = 0;
+        rowPages.forEach((p, i) => {
+          if (p === anchor.pageIndex) offset = rowWidth;
+          rowWidth += sizeOf(p).w + (i < rowPages.length - 1 ? PAGE_SPREAD_GAP : 0);
+        });
+        left = originX + (content.offsetWidth - rowWidth) / 2 + offset;
+        top = originY + item.start;
+      }
+      el.scrollLeft = left + w * anchor.pageX - anchor.cx;
+      el.scrollTop = top + h * anchor.pageY - anchor.cy;
+    } else {
+      el.scrollLeft = anchor.x * anchor.ratio - anchor.cx;
+      el.scrollTop = anchor.y * anchor.ratio - anchor.cy;
+    }
+    if (anchor.pinTop) el.scrollTop = 0;
+    if (anchor.pinLeft) el.scrollLeft = 0;
+  }, [zoom, document, isHorizontal, pageToRow, rotation, rows, virtualizer]);
 
   useEffect(() => {
     if (currentPage < 0 || currentPage >= pageCount) return;
@@ -606,7 +678,7 @@ export function ViewerContainer() {
             const row = rows[virtualItem.index] ?? [];
             return (
               <div
-                key={virtualItem.key}
+                key={virtualItem.index}
                 data-index={virtualItem.index}
                 ref={virtualizer.measureElement}
                 style={{

@@ -1,52 +1,147 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
 
-:root {
+
+:where(:root) {
+  /* Surfaces */
   --dv-bg: #ffffff;
-  --dv-text: #1a1d24;
-  --dv-text-muted: #6b7280;
-  --dv-border: #e5e7eb;
   --dv-toolbar-bg: #ffffff;
   --dv-viewer-bg: #eceee8;
   --dv-sidebar-bg: #f4f5f0;
-  --dv-button-hover: #f3f4f1;
-  --dv-button-active: #e8ebe3;
-  --dv-button-toggled: #eef5e4;
-  --dv-button-toggled-text: #5f8a2e;
-  --dv-button-primary-bg: #5f8a2e;
-  --dv-button-primary-hover: #527826;
-  --dv-button-primary-text: #ffffff;
   --dv-control-bg: #f7f8f4;
   --dv-control-hover-bg: #ffffff;
+  --dv-page-bg: #ffffff;
 
+  /* Text & lines */
+  --dv-text: #1a1d24;
+  --dv-text-muted: #6b7280;
+  --dv-icon: #4b5563;
+  --dv-border: #e5e7eb;
+  --dv-border-strong: #cbd5e1;
+
+  /* Buttons (neutral states) */
+  --dv-button-hover: #f3f4f1;
+  --dv-button-active: #e8ebe3;
+
+  /* Brand accent: change this one to re-tint the whole UI */
+  --dv-accent: #5f8a2e;
+  --dv-accent-contrast: #ffffff;
+
+  /* Status */
+  --dv-danger: #ef4444;
+
+  /* Document overlays */
+  --dv-selection: rgba(51, 107, 228, 0.72);
+  --dv-search-highlight: rgba(254, 240, 138, 0.6);
+  --dv-search-highlight-current: rgba(251, 191, 36, 0.85);
+
+  /* Floating page navigator (dark pill in every theme by default) */
+  --dv-floating-bg: rgba(26, 29, 36, 0.9);
+  --dv-floating-text: #f8fafc;
+  --dv-floating-text-muted: #94a3b8;
+  --dv-floating-hover: rgba(255, 255, 255, 0.12);
+
+  /* Misc */
+  --dv-overlay: rgba(15, 23, 42, 0.4);
+  --dv-checker: #eef0e9;
   --dv-shadow: 0 1px 2px rgba(26, 29, 36, 0.05), 0 1px 3px rgba(26, 29, 36, 0.04);
   --dv-shadow-lg: 0 8px 24px -8px rgba(26, 29, 36, 0.14), 0 2px 8px rgba(26, 29, 36, 0.04);
+  --dv-page-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 12px 32px -10px rgba(15, 23, 42, 0.16);
   --dv-border-radius: 10px;
   --dv-font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
   --dv-font-display: 'Outfit', system-ui, sans-serif;
 }
 
-.dv-theme-dark,
-[data-theme='dark'] .dv-root,
-.dv-root[data-theme='dark'] {
+/* Derived tokens: computed per viewer from the base tokens above. */
+:where(.dv-root) {
+  --dv-accent-hover: color-mix(in srgb, var(--dv-accent) 86%, #000);
+  --dv-accent-soft: color-mix(in srgb, var(--dv-accent) 11%, var(--dv-bg));
+  --dv-accent-soft-text: var(--dv-accent);
+  --dv-accent-border: color-mix(in srgb, var(--dv-accent) 35%, var(--dv-bg));
+  --dv-focus-ring: color-mix(in srgb, var(--dv-accent) 18%, transparent);
+  --dv-danger-text: color-mix(in srgb, var(--dv-danger) 85%, #000);
+  --dv-danger-soft: color-mix(in srgb, var(--dv-danger) 8%, var(--dv-bg));
+
+  /* Legacy names (pre-1.3), kept so existing overrides keep working. */
+  --dv-button-toggled: var(--dv-accent-soft);
+  --dv-button-toggled-text: var(--dv-accent-soft-text);
+  --dv-button-primary-bg: var(--dv-accent);
+  --dv-button-primary-hover: var(--dv-accent-hover);
+  --dv-button-primary-text: var(--dv-accent-contrast);
+}
+
+/* ---- Dark ---- */
+:where(.dv-root.dv-theme-dark, .dv-root[data-theme='dark'], [data-theme='dark'] .dv-root[data-theme='auto']) {
   --dv-bg: #14161a;
-  --dv-text: #f3f4f1;
-  --dv-text-muted: #9ca3af;
-  --dv-border: #2a2e33;
   --dv-toolbar-bg: rgba(26, 29, 36, 0.92);
   --dv-viewer-bg: #0c0d0f;
   --dv-sidebar-bg: #12141a;
-  --dv-button-hover: #1e2228;
-  --dv-button-active: #2a2e33;
-  --dv-button-toggled: #24301a;
-  --dv-button-toggled-text: #b5d48a;
-  --dv-button-primary-bg: #6f9c3b;
-  --dv-button-primary-hover: #5f8a2e;
-  --dv-button-primary-text: #ffffff;
   --dv-control-bg: #1a1d22;
   --dv-control-hover-bg: #22262c;
-
+  --dv-text: #f3f4f1;
+  --dv-text-muted: #9ca3af;
+  --dv-icon: #c3c7cd;
+  --dv-border: #2a2e33;
+  --dv-border-strong: #3a3f46;
+  --dv-button-hover: #1e2228;
+  --dv-button-active: #2a2e33;
+  --dv-accent: #6f9c3b;
+  --dv-accent-hover: color-mix(in srgb, var(--dv-accent) 86%, #000);
+  --dv-accent-soft: color-mix(in srgb, var(--dv-accent) 22%, var(--dv-bg));
+  --dv-accent-soft-text: color-mix(in srgb, var(--dv-accent) 55%, #fff);
+  --dv-accent-border: color-mix(in srgb, var(--dv-accent) 45%, var(--dv-bg));
+  --dv-danger-text: color-mix(in srgb, var(--dv-danger) 70%, #fff);
+  --dv-danger-soft: color-mix(in srgb, var(--dv-danger) 16%, var(--dv-bg));
+  --dv-checker: #1e2228;
   --dv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
   --dv-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* `theme="auto"` follows the OS setting (same values as the dark block). */
+@media (prefers-color-scheme: dark) {
+  :where(.dv-root[data-theme='auto']) {
+    --dv-bg: #14161a;
+    --dv-toolbar-bg: rgba(26, 29, 36, 0.92);
+    --dv-viewer-bg: #0c0d0f;
+    --dv-sidebar-bg: #12141a;
+    --dv-control-bg: #1a1d22;
+    --dv-control-hover-bg: #22262c;
+    --dv-text: #f3f4f1;
+    --dv-text-muted: #9ca3af;
+    --dv-icon: #c3c7cd;
+    --dv-border: #2a2e33;
+    --dv-border-strong: #3a3f46;
+    --dv-button-hover: #1e2228;
+    --dv-button-active: #2a2e33;
+    --dv-accent: #6f9c3b;
+    --dv-accent-hover: color-mix(in srgb, var(--dv-accent) 86%, #000);
+    --dv-accent-soft: color-mix(in srgb, var(--dv-accent) 22%, var(--dv-bg));
+    --dv-accent-soft-text: color-mix(in srgb, var(--dv-accent) 55%, #fff);
+    --dv-accent-border: color-mix(in srgb, var(--dv-accent) 45%, var(--dv-bg));
+    --dv-danger-text: color-mix(in srgb, var(--dv-danger) 70%, #fff);
+    --dv-danger-soft: color-mix(in srgb, var(--dv-danger) 16%, var(--dv-bg));
+    --dv-checker: #1e2228;
+    --dv-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+    --dv-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* ---- Sepia ---- */
+:where(.dv-root.dv-theme-sepia, .dv-root[data-theme='sepia']) {
+  --dv-bg: #f8f1e3;
+  --dv-toolbar-bg: #f8f1e3;
+  --dv-viewer-bg: #e9dec6;
+  --dv-sidebar-bg: #f1e7d2;
+  --dv-control-bg: #f3e9d5;
+  --dv-control-hover-bg: #fcf8ef;
+  --dv-text: #3f3121;
+  --dv-text-muted: #7a6a53;
+  --dv-icon: #5c4b36;
+  --dv-border: #e0d2b6;
+  --dv-border-strong: #cdb994;
+  --dv-button-hover: #efe4cc;
+  --dv-button-active: #e6d8bb;
+  --dv-accent: #9a6b3a;
+  --dv-checker: #efe4cc;
 }
 
 .dv-root {
@@ -141,7 +236,7 @@
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: #4b5563;
+  color: var(--dv-icon);
   cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
   flex-shrink: 0;
@@ -153,7 +248,7 @@
 }
 
 .dv-tool-btn:hover:not(:disabled) {
-  background: #ffffff;
+  background: var(--dv-control-hover-bg);
   border-color: var(--dv-border);
   box-shadow: var(--dv-shadow);
 }
@@ -166,10 +261,10 @@
 .dv-tool-btn[data-toggled='true'],
 .dv-tool-btn[aria-checked='true'],
 .dv-tool-btn[aria-pressed='true'] {
-  background: #eef5e4;
-  border-color: #c5d9a8;
-  color: #5f8a2e;
-  box-shadow: 0 0 0 1px rgba(95, 138, 46, 0.1);
+  background: var(--dv-accent-soft);
+  border-color: var(--dv-accent-border);
+  color: var(--dv-accent-soft-text);
+  box-shadow: 0 0 0 1px var(--dv-focus-ring);
 }
 
 .dv-toolbar-overflow { position: relative; flex: 0 0 auto; }
@@ -321,7 +416,7 @@
 .dv-button[aria-checked='true'] {
   background-color: var(--dv-button-toggled);
   color: var(--dv-button-toggled-text);
-  border-color: rgba(79, 70, 229, 0.15);
+  border-color: var(--dv-accent-border);
 }
 
 .dv-page-input {
@@ -409,12 +504,10 @@
 }
 
 .dv-page {
-  background-color: #ffffff;
+  background-color: var(--dv-page-bg);
   border: none;
   border-radius: 2px;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.06),
-    0 12px 32px -10px rgba(15, 23, 42, 0.16);
+  box-shadow: var(--dv-page-shadow);
   position: relative;
 }
 
@@ -429,10 +522,10 @@
   gap: 2px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(26, 29, 36, 0.9);
+  background: var(--dv-floating-bg);
   backdrop-filter: blur(10px);
   box-shadow: 0 10px 30px -8px rgba(26, 29, 36, 0.4);
-  color: #f8fafc;
+  color: var(--dv-floating-text);
   pointer-events: auto;
 }
 
@@ -444,14 +537,16 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--dv-floating-text);
+  opacity: 0.9;
   cursor: pointer;
   transition: background 0.12s ease, color 0.12s ease;
 }
 
 .dv-page-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--dv-floating-hover);
+  color: var(--dv-floating-text);
+  opacity: 1;
 }
 
 .dv-page-nav-btn:disabled {
@@ -475,8 +570,8 @@
   text-align: center;
   border: none;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: var(--dv-floating-hover);
+  color: var(--dv-floating-text);
   font: inherit;
   outline: none;
   -moz-appearance: textfield;
@@ -490,14 +585,14 @@
 
 .dv-page-nav-sep,
 .dv-page-nav-total {
-  color: #94a3b8;
+  color: var(--dv-floating-text-muted);
 }
 
 .dv-page-nav-divider {
   width: 1px;
   height: 16px;
   margin: 0 4px;
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--dv-floating-hover);
 }
 
 .dv-page > canvas {
@@ -575,7 +670,7 @@
   padding: 4px;
   border: 2px solid transparent;
   border-radius: 6px;
-  background-color: #ffffff;
+  background-color: var(--dv-page-bg);
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
   transition: all 0.15s ease;
   display: flex;
@@ -587,12 +682,12 @@
 
 .dv-sidebar-thumbnail-item:hover .dv-sidebar-thumbnail-container {
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
-  border-color: #cbd5e1;
+  border-color: var(--dv-border-strong);
 }
 
 .dv-sidebar-thumbnail-item[data-active='true'] .dv-sidebar-thumbnail-container {
-  border-color: #5f8a2e;
-  box-shadow: 0 0 0 2px rgba(95, 138, 46, 0.18);
+  border-color: var(--dv-accent);
+  box-shadow: 0 0 0 2px var(--dv-focus-ring);
 }
 
 .dv-sidebar-thumbnail-label {
@@ -758,7 +853,7 @@
 }
 
 .dv-text-layer ::selection {
-  background: rgba(51, 107, 228, 0.72);
+  background: var(--dv-selection);
   color: transparent;
 }
 
@@ -774,13 +869,13 @@
 
 .dv-search-highlight {
   position: absolute;
-  background-color: rgba(254, 240, 138, 0.6);
+  background-color: var(--dv-search-highlight);
   border-radius: 2px;
 }
 
 .dv-search-highlight-current {
-  background-color: rgba(251, 191, 36, 0.85);
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
+  background-color: var(--dv-search-highlight-current);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dv-search-highlight-current) 35%, transparent);
 }
 
 .dv-search-bar {
@@ -828,7 +923,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: var(--dv-overlay);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -878,7 +973,7 @@
 
 .dv-dialog-error {
   font-size: 12px;
-  color: #ef4444;
+  color: var(--dv-danger);
   font-weight: 600;
   margin: 0;
 }
@@ -1007,7 +1102,7 @@
 }
 
 .dv-ocr-input[aria-invalid='true'] {
-  border-color: #ef4444;
+  border-color: var(--dv-danger);
 }
 
 .dv-ocr-field {
@@ -1302,7 +1397,7 @@
 
 .dv-annotation-delete {
   cursor: pointer;
-  fill: #ef4444;
+  fill: var(--dv-danger);
   opacity: 0.85;
   transition: opacity 0.15s ease;
 }
@@ -1318,7 +1413,7 @@
   resize: both;
   border: 1px solid var(--dv-button-primary-bg);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--dv-page-bg) 92%, transparent);
   outline: none;
   padding: 4px 6px;
   font-family: inherit;
@@ -1686,25 +1781,13 @@
   padding: 12px;
   border-radius: 12px;
   background:
-    linear-gradient(45deg, #eef0e9 25%, transparent 25%),
-    linear-gradient(-45deg, #eef0e9 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #eef0e9 75%),
-    linear-gradient(-45deg, transparent 75%, #eef0e9 75%);
+    linear-gradient(45deg, var(--dv-checker) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--dv-checker) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--dv-checker) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--dv-checker) 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
   border: 1px solid var(--dv-border);
-}
-
-.dv-theme-dark .dv-anno-preview-canvas,
-[data-theme='dark'] .dv-anno-preview-canvas,
-.dv-root[data-theme='dark'] .dv-anno-preview-canvas {
-  background:
-    linear-gradient(45deg, #1e2228 25%, transparent 25%),
-    linear-gradient(-45deg, #1e2228 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #1e2228 75%),
-    linear-gradient(-45deg, transparent 75%, #1e2228 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
 }
 
 .dv-anno-preview-hl {
@@ -1759,13 +1842,13 @@
 
 .dv-anno-btn-danger {
   background: transparent;
-  border-color: color-mix(in srgb, #ef4444 35%, var(--dv-border));
-  color: #dc2626;
+  border-color: color-mix(in srgb, var(--dv-danger) 35%, var(--dv-border));
+  color: var(--dv-danger-text);
   margin-right: auto;
 }
 
 .dv-anno-btn-danger:hover {
-  background: #fef2f2;
+  background: var(--dv-danger-soft);
 }
 
 .dv-anno-chip-wrap {

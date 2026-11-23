@@ -22,6 +22,7 @@ import { PasswordDialog } from "./dialogs/PasswordDialog";
 import { PropertiesDialog } from "./dialogs/PropertiesDialog";
 import { OcrDialog } from "./dialogs/OcrDialog";
 import { sortOcrResults } from "../core/ocr";
+import { colorsToCssVars } from "../core/theme";
 import { useStrings } from "../constants/strings";
 import type {
   FileSource,
@@ -66,6 +67,7 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
     onVisiblePagesChange,
     onOcrComplete,
     theme,
+    colors,
     initialZoom,
     showToolbar = true,
     className,
@@ -305,6 +307,8 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
     loadError?.code === "PASSWORD_REQUIRED" ||
     loadError?.code === "PASSWORD_INCORRECT";
 
+  const rootStyle = useMemo(() => colorsToCssVars(colors), [colors]);
+
   const pendingPassword = _pendingPassword as {
     reader: { meta: { name: string } };
     source: unknown;
@@ -316,7 +320,8 @@ function DocumentViewerInner({ innerRef, ...props }: InnerProps) {
       className={["dv-root", theme ? `dv-theme-${theme}` : "", className ?? ""]
         .filter(Boolean)
         .join(" ")}
-      data-theme={theme ?? "auto"}
+      data-theme={theme ?? "light"}
+      style={rootStyle}
       tabIndex={-1}
     >
       {showToolbar && <Toolbar features={adapter?.manifest.features} />}

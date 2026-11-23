@@ -203,14 +203,13 @@ export class PdfAdapter implements Adapter {
       if (target instanceof HTMLCanvasElement) {
         const renderWidth = Math.ceil(viewport.width);
         const renderHeight = Math.ceil(viewport.height);
-        target.width = renderWidth;
-        target.height = renderHeight;
-        target.style.width = `${outWidth}px`;
-        target.style.height = `${outHeight}px`;
 
-        const c2d = target.getContext('2d');
-        if (c2d) {
-          const task = page.render(renderParams(c2d, viewport));
+        const buffer = window.document.createElement('canvas');
+        buffer.width = renderWidth;
+        buffer.height = renderHeight;
+        const bufferCtx = buffer.getContext('2d');
+        if (bufferCtx) {
+          const task = page.render(renderParams(bufferCtx, viewport));
           const onAbort = () => task.cancel();
           ctx.signal.addEventListener('abort', onAbort, { once: true });
           try {
@@ -218,6 +217,16 @@ export class PdfAdapter implements Adapter {
           } finally {
             ctx.signal.removeEventListener('abort', onAbort);
           }
+          if (ctx.signal.aborted) {
+            throw new DOMException('Render was cancelled.', 'AbortError');
+          }
+
+          target.width = renderWidth;
+          target.height = renderHeight;
+          target.style.width = `${outWidth}px`;
+          target.style.height = `${outHeight}px`;
+          target.getContext('2d')?.drawImage(buffer, 0, 0);
+          buffer.width = buffer.height = 0;
         }
       }
 
