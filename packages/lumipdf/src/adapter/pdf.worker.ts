@@ -35,10 +35,12 @@ class OffscreenCanvasFactory {
   }
 }
 
+const PDFJS_CDN = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}`;
+
 const PDF_ASSETS = {
-  cMapUrl: '/pdfjs/cmaps/',
+  cMapUrl: `${PDFJS_CDN}/cmaps/`,
   cMapPacked: true,
-  standardFontDataUrl: '/pdfjs/standard_fonts/',
+  standardFontDataUrl: `${PDFJS_CDN}/standard_fonts/`,
   disableFontFace: true,
   useSystemFonts: false,
   useWorkerFetch: true,

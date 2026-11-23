@@ -1,6 +1,6 @@
 {
-  "buildCommand": "bunx turbo run build --filter=playground",
-  "outputDirectory": "apps/playground/.next",
+  "buildCommand": "bunx turbo run build --filter=website",
+  "outputDirectory": "apps/website/.next",
   "installCommand": "bun install",
   "framework": "nextjs"
 }

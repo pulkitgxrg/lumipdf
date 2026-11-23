@@ -8,7 +8,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "prepare": "husky",
-    "dev:playground": "turbo run dev --filter=playground"
+    "dev:website": "turbo run dev --filter=website"
   },
   "devDependencies": {
     "husky": "^9.1.7",

@@ -46,8 +46,11 @@ function renderParams(context: CanvasRenderingContext2D, viewport: PageViewport)
 
 const destroyDoc = (doc: PDFDocumentProxy) => doc.loadingTask.destroy().catch(() => {});
 
-const CMAP_URL = '/pdfjs/cmaps/';
-const STANDARD_FONT_DATA_URL = '/pdfjs/standard_fonts/';
+// Character maps and standard fonts load from jsDelivr, pinned to the installed
+// pdfjs-dist version (same as the worker), so apps don't have to host them.
+const PDFJS_CDN = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}`;
+const CMAP_URL = `${PDFJS_CDN}/cmaps/`;
+const STANDARD_FONT_DATA_URL = `${PDFJS_CDN}/standard_fonts/`;
 
 export const pdfManifest: AdapterManifest = {
   id: 'pdf',
